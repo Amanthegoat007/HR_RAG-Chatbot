@@ -1,0 +1,25 @@
+# ============================================================================
+# FILE: services/auth/requirements.txt
+# ARCHITECTURE REF: §9 — Security Implementation
+# ============================================================================
+
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic-settings==2.3.0
+
+# JWT (HS256) — python-jose is the standard JWT library for Python
+python-jose[cryptography]==3.3.0
+
+# Password hashing — passlib with bcrypt backend
+# NOTE: passlib 1.7.4 is incompatible with bcrypt>=4.1 (internal API removed)
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# PostgreSQL async driver for audit log writes
+asyncpg==0.29.0
+
+# Prometheus metrics
+prometheus-fastapi-instrumentator==6.1.0
+
+# HTTP client (for dependency health checks)
+httpx==0.27.0

@@ -1,0 +1,88 @@
+# ============================================================================
+# FILE: docker-compose.prod.yml
+# PURPOSE: Production hardening overrides — stricter restart policies,
+#          read-only containers, explicit restart conditions.
+#          Merges with docker-compose.yml using:
+#          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ARCHITECTURE REF: §8.3 — Production Deployment
+# ============================================================================
+
+services:
+
+  # Production: always restart on failure (not just unless-stopped)
+  nginx:
+    restart: always
+    # Read-only root filesystem for stateless services (security hardening)
+    read_only: true
+    # tmpfs for nginx temp files (needed even with read-only root)
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+
+  postgres:
+    restart: always
+    environment:
+      # Tune PostgreSQL for production: increase shared buffers
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_MAX_CONNECTIONS: "50"
+
+  redis:
+    restart: always
+    # Enable persistence in production for cache durability across restarts
+    command: >
+      valkey-server
+      --maxmemory 900mb
+      --maxmemory-policy allkeys-lru
+      --save "3600 1"
+      --save "300 100"
+      --appendonly yes
+      --appendfsync everysec
+      --loglevel warning
+
+  minio:
+    restart: always
+
+  qdrant:
+    restart: always
+
+  llm-server:
+    restart: always
+
+  embedding-svc:
+    restart: always
+
+  reranker-svc:
+    restart: always
+
+  auth-svc:
+    restart: always
+    # Read-only root filesystem (stateless service)
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  query-svc:
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  ingest-svc:
+    restart: always
+    # ingest-svc needs writable /tmp for file processing
+    tmpfs:
+      - /tmp
+
+  ingest-worker:
+    restart: always
+    tmpfs:
+      - /tmp
+
+  prometheus:
+    restart: always
+
+  grafana:
+    restart: always
+    # Disable anonymous access in production — require login
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"

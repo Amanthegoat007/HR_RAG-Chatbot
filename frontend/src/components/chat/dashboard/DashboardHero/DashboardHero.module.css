@@ -1,0 +1,87 @@
+.heroContainer {
+    flex-direction: column;
+}
+ 
+.heroContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+ 
+.highlightText {
+    color: #65a30d;
+    /* Fallback */
+    color: var(--app-accent-tertiary, #65a30d);
+}
+ 
+@keyframes pulse {
+ 
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+ 
+    50% {
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+}
+ 
+@keyframes spin-aura {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+ 
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+ 
+@keyframes spin-image {
+    from {
+        transform: rotate(0deg);
+    }
+ 
+    to {
+        transform: rotate(360deg);
+    }
+}
+ 
+.imageContainer {
+    position: relative;
+    display: inline-block;
+}
+ 
+.auraEffect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 130%;
+    height: 130%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    /* 50/50 split with #e9f5d9 green and sky blue */
+    background: conic-gradient(from 0deg,
+            #e9f5d9 0%,
+            #e9f5d9 50%,
+            #93c5fd 50%,
+            #93c5fd 100%);
+    filter: blur(18px);
+    animation: spin-aura 4s linear infinite;
+    z-index: 0;
+    opacity: 0.9;
+}
+ 
+.heroImage {
+    width: 80px;
+    height: auto;
+    display: block;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    animation: spin-image 15s linear infinite;
+}
+ 

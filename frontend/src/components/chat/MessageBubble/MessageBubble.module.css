@@ -1,0 +1,441 @@
+/* Message Bubble Container */
+.messageBubble {
+  display: flex;
+  gap: 12px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+/* Avatar Circle */
+.avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Content Container */
+.contentWrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Message Content Box */
+.messageContent {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Title Styles */
+.messageTitle {
+  font-weight: 600;
+}
+
+/* Data Visualization Container */
+.dataContainer {
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+/* Code Block */
+.codeBlock {
+  background-color: #1e1e1e;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  white-space: pre-wrap;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+}
+
+/* Text Content */
+.textContent {
+  white-space: pre-wrap;
+}
+
+/* Copy Button Container */
+.copyButtonWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Follow-up Question Item */
+.followUpItem {
+  cursor: pointer;
+}
+
+/* ── Markdown Table Styles (Dark Theme) ─────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  font-size: 0.9em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background-color: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.table tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table td {
+  color: #cbd5e1;
+}
+
+/* ── Markdown Content Styles (Dark Theme) ──────────────────── */
+
+/* Headings */
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+  color: #f1f5f9;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.markdownContent h1 {
+  font-size: 1.4em;
+}
+.markdownContent h2 {
+  font-size: 1.2em;
+}
+.markdownContent h3 {
+  font-size: 1.1em;
+}
+
+/* Bold and emphasis */
+.markdownContent strong {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.markdownContent em {
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+/* Lists */
+.markdownContent ul,
+.markdownContent ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.markdownContent li {
+  margin: 4px 0;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.markdownContent li::marker {
+  color: #4ade80;
+}
+
+/* Inline code */
+.markdownContent code {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #a5f3fc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: "Fira Code", "Cascadia Code", monospace;
+}
+
+/* Code blocks */
+.markdownContent pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.markdownContent pre code {
+  background: none;
+  padding: 0;
+  color: #e2e8f0;
+  font-size: 0.85em;
+}
+
+/* Blockquotes */
+.markdownContent blockquote {
+  border-left: 3px solid #4ade80;
+  padding-left: 14px;
+  margin: 12px 0;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Links */
+.markdownContent a {
+  color: #4ade80;
+  text-decoration: none;
+}
+
+.markdownContent a:hover {
+  text-decoration: underline;
+}
+
+/* Paragraphs */
+.markdownContent p {
+  margin: 6px 0;
+  line-height: 1.7;
+}
+
+/* Horizontal rules */
+.markdownContent hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+}
+
+/* ── Source Citation Styles ─────────────────────────────────── */
+.sourcesPanel {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sourcesLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 4px 6px 4px 0;
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  color: #86efac;
+  font-size: 0.82em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.sourceChip:hover {
+  background: rgba(74, 222, 128, 0.14);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.sourceChipIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #4ade80;
+}
+
+.sourceChipText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+/* ── Pipeline Stage Indicator ──────────────────────────────── */
+.stageIndicator {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+  position: relative;
+}
+
+.stageItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82em;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: left center;
+  /* Default: pending (faded, small) */
+  color: #334155;
+  opacity: 0.3;
+  transform: scale(0.88) translateX(0);
+}
+
+/* Active stage: bright, larger, prominent */
+.stageItem.stage_active {
+  color: #4ade80;
+  opacity: 1;
+  transform: scale(1) translateX(4px);
+  background: rgba(74, 222, 128, 0.06);
+  font-weight: 600;
+}
+
+/* Done stage: faded up, smaller */
+.stageItem.stage_done {
+  color: #86efac;
+  opacity: 0.5;
+  transform: scale(0.92) translateX(0);
+}
+
+.stageDot {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid transparent;
+}
+
+/* Active dot: pulsing green glow */
+.stage_active .stageDot {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: #4ade80;
+  animation: stagePulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+}
+
+/* Done dot: solid green check */
+.stage_done .stageDot {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.stageLabel {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.stage_active .stageLabel {
+  font-weight: 600;
+}
+
+@keyframes stagePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+}
+
+@keyframes stageSlideIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Expandable Source Card ─────────────────────────────────── */
+.sourceCard {
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.sourceCard:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.sourceCardExpanded {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.sourceCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sourceCardTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceCardFilename {
+  font-size: 0.88em;
+  font-weight: 600;
+  color: #86efac;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceCardDetail {
+  font-size: 0.78em;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.sourceCardToggle {
+  font-size: 0.7em;
+  color: #475569;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.sourceCardBody {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85em;
+  color: #94a3b8;
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+}

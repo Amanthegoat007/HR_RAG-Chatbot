@@ -1,0 +1,48 @@
+# ============================================================================
+# FILE: services/ingest/requirements.txt
+# PURPOSE: Dependencies for both ingest-svc (FastAPI) and ingest-worker (Celery).
+# ARCHITECTURE REF: §3 — Document Ingestion Pipeline
+# ============================================================================
+
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic-settings==2.3.0
+python-multipart==0.0.9   # Required for FastAPI file upload (UploadFile)
+
+# Document processing — the "Convert to Markdown" pipeline (Architecture §3.1)
+pymupdf==1.24.1            # PyMuPDF: fast PDF text+table extraction
+unstructured[all-docs]==0.14.4  # Handles complex layouts, OCR integration
+python-docx                # DOCX extraction (version managed by unstructured)
+openpyxl==3.1.2            # XLSX extraction
+python-pptx==0.6.23        # PPTX extraction
+python-magic==0.4.27       # MIME type detection (requires libmagic1 system package)
+pytesseract==0.3.10        # Python wrapper for Tesseract OCR
+
+# Text chunking
+tiktoken==0.7.0            # Token counting (same tokenizer as GPT models, accurate for Mistral too)
+nltk==3.8.1                # Sentence tokenization for sentence-aligned chunking
+
+# Celery (async task queue) + Redis Streams broker
+celery[redis]==5.4.0
+redis==5.0.4               # Redis client (also used for cache)
+
+# Object storage
+minio==7.2.7               # MinIO Python SDK
+
+# Database
+asyncpg==0.29.0            # Async PostgreSQL driver
+
+# Vector database
+qdrant-client==1.9.1       # Qdrant Python client (matches server version)
+
+# HTTP client (calls embedding-svc)
+httpx==0.27.0
+
+# Prometheus metrics
+prometheus-fastapi-instrumentator==6.1.0
+
+# Retry logic
+tenacity==8.3.0
+
+# JWT validation (same as auth-svc — uses shared/jwt_utils.py)
+python-jose[cryptography]==3.3.0

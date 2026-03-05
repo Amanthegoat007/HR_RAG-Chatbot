@@ -1,0 +1,19 @@
+# ============================================================================
+# FILE: monitoring/grafana/provisioning/dashboards/dashboards.yml
+# PURPOSE: Auto-provision the HR Chatbot dashboard from JSON file.
+# ARCHITECTURE REF: §10 — Monitoring & Observability
+# ============================================================================
+
+apiVersion: 1
+
+providers:
+  - name: "HR RAG Chatbot"
+    orgId: 1
+    folder: "HR Chatbot"
+    type: file
+    disableDeletion: true      # Prevent accidental dashboard deletion via UI
+    updateIntervalSeconds: 30  # Check for dashboard file updates every 30s
+    allowUiUpdates: false      # Enforce dashboards as code
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

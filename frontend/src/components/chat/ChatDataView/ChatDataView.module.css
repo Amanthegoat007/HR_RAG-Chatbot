@@ -1,0 +1,19 @@
+/* Data View Container */
+.dataViewContainer {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 16px;
+  background-color: var(--app-surface);
+  overflow: hidden;
+}
+
+/* Insight Item */
+.insightItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--app-surface-hover);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}

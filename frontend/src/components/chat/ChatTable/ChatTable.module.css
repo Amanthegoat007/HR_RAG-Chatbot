@@ -1,0 +1,18 @@
+/* Table Container */
+.tableContainer {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Table Header */
+.tableHeader {
+  white-space: nowrap;
+}
+
+/* Pagination Container */
+.paginationWrapper {
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid var(--app-border);
+  padding-top: 8px;
+}

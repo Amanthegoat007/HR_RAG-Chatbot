@@ -1,0 +1,148 @@
+# ============================================================================
+# FILE: monitoring/prometheus/prometheus.yml
+# PURPOSE: Prometheus scrape configuration for all HR RAG chatbot services.
+# ARCHITECTURE REF: §10 — Monitoring & Observability
+# ============================================================================
+#
+# Prometheus scrapes all 13 application service containers every 15 seconds.
+# All services expose /metrics in Prometheus exposition format via
+# prometheus-fastapi-instrumentator (FastAPI services) or llama.cpp's built-in
+# /metrics endpoint.
+#
+# Key metrics collected:
+#   - http_request_duration_seconds  — P50/P95/P99 latency per endpoint
+#   - http_requests_total            — RPS and error rate per service
+#   - http_requests_inprogress       — concurrent connections
+#   - redis_cache_hits_total         — cache hit/miss ratio (custom)
+#   - celery_task_runtime_seconds    — ingest pipeline duration
+#   - python_gc_*                    — Python GC health
+#   - process_resident_memory_bytes  — per-service RAM usage
+
+global:
+  scrape_interval:     15s   # Scrape every 15 seconds
+  evaluation_interval: 15s   # Evaluate alerting rules every 15 seconds
+  scrape_timeout:      10s   # Timeout per scrape request
+
+  # External labels added to all metrics (useful for multi-environment setups)
+  external_labels:
+    environment: "on-premises"
+    project: "hr-rag-chatbot"
+
+# ─── Alerting Rules (placeholder — add rules in rules/ directory) ─────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ["alertmanager:9093"]
+#
+# rule_files:
+#   - "rules/*.yml"
+
+# ─── Scrape Configurations ────────────────────────────────────────────────────
+scrape_configs:
+
+  # ── Prometheus self-monitoring ─────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+
+  # ── Auth Service ──────────────────────────────────────────────────────────
+  - job_name: "auth-svc"
+    static_configs:
+      - targets: ["auth-svc:8001"]
+        labels:
+          service: "auth-svc"
+          tier: "application"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── Query Service ─────────────────────────────────────────────────────────
+  # This is the most important service to monitor — it handles all user queries.
+  # Key metrics: request latency, cache hit rate, error rate.
+  - job_name: "query-svc"
+    static_configs:
+      - targets: ["query-svc:8002"]
+        labels:
+          service: "query-svc"
+          tier: "application"
+    metrics_path: "/metrics"
+    scrape_interval: 10s   # Higher frequency for the primary user-facing service
+
+  # ── Ingest Service ────────────────────────────────────────────────────────
+  - job_name: "ingest-svc"
+    static_configs:
+      - targets: ["ingest-svc:8003"]
+        labels:
+          service: "ingest-svc"
+          tier: "application"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── Embedding Service ─────────────────────────────────────────────────────
+  # Monitor batch throughput and inference latency.
+  - job_name: "embedding-svc"
+    static_configs:
+      - targets: ["embedding-svc:8004"]
+        labels:
+          service: "embedding-svc"
+          tier: "ai-model"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── Reranker Service ──────────────────────────────────────────────────────
+  - job_name: "reranker-svc"
+    static_configs:
+      - targets: ["reranker-svc:8005"]
+        labels:
+          service: "reranker-svc"
+          tier: "ai-model"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── LLM Server (llama.cpp) ────────────────────────────────────────────────
+  # llama.cpp exposes a /metrics endpoint with token generation rate,
+  # prompt processing time, and active slots.
+  - job_name: "llm-server"
+    static_configs:
+      - targets: ["llm-server:8080"]
+        labels:
+          service: "llm-server"
+          tier: "ai-model"
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  # NOTE: Redis does not natively expose Prometheus metrics.
+  # Use redis_exporter sidecar for production monitoring.
+  # For this deployment, cache hit/miss metrics come from the query-svc /metrics.
+  # Uncomment below if you add redis_exporter:
+  #
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]
+  #       labels:
+  #         service: "redis"
+  #         tier: "infrastructure"
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  # NOTE: Add postgres_exporter for production.
+  # Uncomment if you add postgres_exporter:
+  #
+  # - job_name: "postgres"
+  #   static_configs:
+  #     - targets: ["postgres-exporter:9187"]
+  #       labels:
+  #         service: "postgres"
+  #         tier: "infrastructure"
+
+  # ── Nginx ─────────────────────────────────────────────────────────────────
+  # nginx-prometheus-exporter scrapes nginx stub_status and exports metrics.
+  # Uncomment if you add nginx-prometheus-exporter:
+  #
+  # - job_name: "nginx"
+  #   static_configs:
+  #     - targets: ["nginx-exporter:9113"]
+  #       labels:
+  #         service: "nginx"
+  #         tier: "infrastructure"

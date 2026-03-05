@@ -1,0 +1,22 @@
+﻿docker :     return _bootstrap._gcd_import(name[level:], package, level)
+At line:1 char:1
++ docker logs rag-pipeline --tail 15 2>&1 | Out-File -FilePath rag_logs ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    return _boo...package, level): 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/app/app/main.py", line 34, in <module>
+    from app.qdrant_client_wrapper import get_qdrant_client
+ModuleNotFoundError: No module named 'app.qdrant_client_wrapper'
+Waiting for /models/model.gguf to be mounted...
+2026-03-04 19:22:24,936 WARN exited: fastapi (exit status 1; not expected)
+2026-03-04 19:22:25,939 INFO spawned: 'fastapi' with pid 280
+2026-03-04 19:22:26,941 INFO success: fastapi entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

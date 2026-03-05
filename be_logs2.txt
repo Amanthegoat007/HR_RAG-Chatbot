@@ -1,0 +1,25 @@
+﻿
+[tasks]
+  . app.tasks.delete_document
+  . app.tasks.process_document
+
+docker : INFO:     Started server process [8]
+At line:1 char:92
++ ... _logs2.txt -Encoding utf8; docker logs backend --tail 15 2>&1 | Out-F ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:     Started server process [ 
+   8]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO:     Waiting for application startup.
+/app/app/qdrant_client_wrapper.py:34: UserWarning: Qdrant client version 1.17.0 
+is incompatible with server version 1.9.0. Major versions should match and 
+minor version difference must not exceed 1. Set check_compatibility=False to 
+skip version check.
+  return QdrantClient(url=settings.qdrant_url, timeout=30)
+[2026-03-04 19:21:38,420: INFO/MainProcess] Connected to redis://redis:6379/1
+[2026-03-04 19:21:38,429: INFO/MainProcess] mingle: searching for neighbors
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-03-04 19:21:39,444: INFO/MainProcess] mingle: all alone
+[2026-03-04 19:21:39,470: INFO/MainProcess] celery@f034bd161d44 ready.

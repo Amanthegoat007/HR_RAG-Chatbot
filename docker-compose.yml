@@ -1,0 +1,231 @@
+# ============================================================================
+# FILE: docker-compose.yml
+# PURPOSE: Production Docker Compose — defines the 8 consolidated containers.
+# ARCHITECTURE REF: 4 Application Containers + 4 Infrastructure Containers
+# DEPENDENCIES: .env file (copy from .env.example and fill values)
+# USAGE:
+#   docker compose up -d
+# ============================================================================
+
+name: hr-rag-chatbot
+
+services:
+  # ==========================================================================
+  # 1. FRONTEND — Nginx serving React SPA + Reverse Proxy (/api/*)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_started
+      rag-pipeline:
+        condition: service_started
+    networks:
+      - hr-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # ==========================================================================
+  # 2. BACKEND MONOLITH — FastAPI (Auth, BFF, Ingest) + Celery Worker
+  # ==========================================================================
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+    container_name: backend
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-8}
+      POSTGRES_DSN: ${POSTGRES_DSN}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      MINIO_ENDPOINT_URL: ${MINIO_ENDPOINT_URL:-http://minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-hr-documents}
+      RAG_PIPELINE_URL: ${RAG_PIPELINE_URL:-http://rag-pipeline:8002}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-hr_admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      USER_USERNAME: ${USER_USERNAME:-hr_user}
+      USER_PASSWORD_HASH: ${USER_PASSWORD_HASH}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ==========================================================================
+  # 3. RAG PIPELINE — Query Orchestrator + Embedding + Reranker + llama.cpp
+  # ==========================================================================
+  rag-pipeline:
+    build:
+      context: ./services/rag-pipeline
+      dockerfile: Dockerfile
+    container_name: rag-pipeline
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-hr_documents}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-BAAI/bge-m3}
+      RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-BAAI/bge-reranker-v2-m3}
+      LLM_SERVER_URL: ${LLM_SERVER_URL:-http://localhost:8080}
+      LLM_PROVIDER: ${LLM_PROVIDER:-local}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1024}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.1}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./services/llm/models:/models:ro
+      - hf_cache:/root/.cache/huggingface  # Persist HF models across restarts
+    depends_on:
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s  # Models take time to load
+    deploy:
+      resources:
+        limits:
+          memory: 14G # Large memory needed for LLM + Embedding + Reranker in-process
+
+  # ==========================================================================
+  # 4. MONITORING — Prometheus + Grafana (Using Supervisor)
+  # ==========================================================================
+  monitoring:
+    build:
+      context: ./monitoring
+      dockerfile: Dockerfile
+    container_name: monitoring
+    ports:
+      - "3000:3000" # Grafana
+      - "9090:9090" # Prometheus
+    networks:
+      - hr-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ==========================================================================
+  # 5. POSTGRESQL — Conversations, Messages, Documents, Audit
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # 6. REDIS (Valkey) — Semantic cache + Celery broker
+  # ==========================================================================
+  redis:
+    image: valkey/valkey:7.2-alpine
+    container_name: redis
+    command: >
+      valkey-server --maxmemory 900mb --maxmemory-policy allkeys-lru --save "" --appendonly no --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # 7. QDRANT — Vector database
+  # ==========================================================================
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    container_name: qdrant
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: "6334"
+      QDRANT__STORAGE__ON_DISK_PAYLOAD: "false"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - hr-network
+    restart: unless-stopped
+
+  # ==========================================================================
+  # 8. MINIO — Document Store (S3 compatible)
+  # ==========================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "127.0.0.1:9001:9001"
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+networks:
+  hr-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  minio_data:
+  hf_cache:  # Persists HuggingFace model downloads (BGE-M3, BGE-Reranker) across restarts
