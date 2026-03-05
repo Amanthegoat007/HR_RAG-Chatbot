@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build llama.cpp (uses CMake now)
+# Use locally cloned llama.cpp
 WORKDIR /llama.cpp
-RUN git clone https://github.com/ggerganov/llama.cpp.git . \
-    && cmake -B build \
+COPY llama.cpp/ .
+RUN cmake -B build \
     && cmake --build build --config Release -j4 --target llama-server
 
 # Install CPU-only PyTorch first (FlagEmbedding pulls torch, but we don't need CUDA — saves ~700MB)

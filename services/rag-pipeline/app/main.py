@@ -30,21 +30,29 @@ from app.config import settings
 from app.models import QueryRequest, HealthResponse
 from app.embedding_service import embedding_service
 from app.reranker_service import reranker_service
+from app.model_prefetch import prefetch_required_models
 from app.pipeline import run_query_pipeline
 from app.cache import SemanticCache
 from app.qdrant_client_wrapper import get_qdrant_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Prefetch models into shared HF cache before model initialization.
+    # This enables faster restarts and avoids slow/unstable runtime downloads.
+    try:
+        embedding_model_path, reranker_model_path = prefetch_required_models()
+    except Exception as exc:
+        raise RuntimeError(f"Could not prefetch required models: {exc}") from exc
+
     # Load Embedding Model
     try:
-        embedding_service.load_model()
+        embedding_service.load_model(embedding_model_path)
     except Exception as exc:
         raise RuntimeError(f"Could not load embedding model: {exc}") from exc
 
     # Load Reranker Model
     try:
-        reranker_service.load_model()
+        reranker_service.load_model(reranker_model_path)
     except Exception as exc:
         raise RuntimeError(f"Could not load reranker model: {exc}") from exc
 

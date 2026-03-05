@@ -255,6 +255,7 @@ export const streamMessage =
             dispatch(
               chatSlice.actions.finalizeStream({
                 conversationId: payload.conversationId,
+                fullText: _fullText,
               }),
             );
           },
@@ -420,13 +421,19 @@ const chatSlice = createSlice({
       }
     },
 
-    finalizeStream(state, action: { payload: { conversationId: string } }) {
+    finalizeStream(
+      state,
+      action: { payload: { conversationId: string; fullText?: string } },
+    ) {
       const convo = state.conversations.find(
         (c) => c.id === action.payload.conversationId,
       );
       if (!convo) return;
       const msg = convo.messages.find((m) => m.streaming);
       if (msg) {
+        if (action.payload.fullText && action.payload.fullText.trim()) {
+          msg.content = action.payload.fullText;
+        }
         msg.streaming = false;
       }
     },

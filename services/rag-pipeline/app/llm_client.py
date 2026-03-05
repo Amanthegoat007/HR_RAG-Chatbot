@@ -195,6 +195,8 @@ async def _stream_tokens_from_response(
 async def _call_local_llm(
     client: httpx.AsyncClient,
     messages: list[dict[str, str]],
+    max_tokens: Optional[int] = None,
+    stop: Optional[list[str]] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Call the local llama.cpp HTTP server with streaming enabled.
@@ -218,9 +220,11 @@ async def _call_local_llm(
         "messages": messages,
         "stream": True,
         "temperature": settings.llm_temperature,
-        "max_tokens": settings.llm_max_tokens,
+        "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
         "top_p": settings.llm_top_p,
     }
+    if stop:
+        payload["stop"] = stop
 
     async with client.stream(
         "POST",
@@ -241,6 +245,8 @@ async def _call_local_llm(
 async def _call_azure_openai(
     client: httpx.AsyncClient,
     messages: list[dict[str, str]],
+    max_tokens: Optional[int] = None,
+    stop: Optional[list[str]] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Call Azure OpenAI as fallback when the local LLM is unavailable.
@@ -278,8 +284,10 @@ async def _call_azure_openai(
         "messages": messages,
         "stream": True,
         "temperature": settings.llm_temperature,
-        "max_tokens": settings.llm_max_tokens,
+        "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
     }
+    if stop:
+        payload["stop"] = stop
 
     headers = {"api-key": settings.azure_openai_api_key}
 
@@ -305,6 +313,8 @@ async def _call_azure_openai(
 async def generate_stream(
     client: httpx.AsyncClient,
     messages: list[dict[str, str]],
+    max_tokens: Optional[int] = None,
+    stop: Optional[list[str]] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Generate a streaming LLM response, automatically selecting the provider.
@@ -332,7 +342,12 @@ async def generate_stream(
     """
     # --- Explicit Azure-only mode ---
     if settings.llm_provider == "azure_openai":
-        async for token in _call_azure_openai(client, messages):
+        async for token in _call_azure_openai(
+            client,
+            messages,
+            max_tokens=max_tokens,
+            stop=stop,
+        ):
             yield token
         return
 
@@ -340,7 +355,12 @@ async def generate_stream(
     if _circuit_breaker.is_available:
         try:
             token_count = 0
-            async for token in _call_local_llm(client, messages):
+            async for token in _call_local_llm(
+                client,
+                messages,
+                max_tokens=max_tokens,
+                stop=stop,
+            ):
                 yield token
                 token_count += 1
             # Success: close the circuit (records success only after full stream)
@@ -358,5 +378,10 @@ async def generate_stream(
 
     # --- Azure OpenAI fallback ---
     logger.info("Falling back to Azure OpenAI", extra={"circuit_state": _circuit_breaker.state.value})
-    async for token in _call_azure_openai(client, messages):
+    async for token in _call_azure_openai(
+        client,
+        messages,
+        max_tokens=max_tokens,
+        stop=stop,
+    ):
         yield token

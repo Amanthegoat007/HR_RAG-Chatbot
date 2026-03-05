@@ -51,7 +51,7 @@ class EmbeddingService:
         self._load_time: float | None = None
         self.start_time = time.time()
 
-    def load_model(self) -> None:
+    def load_model(self, model_name_or_path: str | None = None) -> None:
         """
         Load the BGE-M3 model into memory.
 
@@ -61,8 +61,10 @@ class EmbeddingService:
         Raises:
             RuntimeError: If model loading fails (e.g., model files not found).
         """
+        resolved_model = model_name_or_path or settings.embedding_model_name
+
         logger.info("Loading BGE-M3 embedding model", extra={
-            "model": settings.embedding_model_name,
+            "model": resolved_model,
             "batch_size": settings.embedding_batch_size,
         })
 
@@ -72,7 +74,7 @@ class EmbeddingService:
         # use_fp16=False: CPU inference uses FP32 (FP16 is for GPU only)
         # The model is loaded from HuggingFace cache (pre-downloaded at Docker build time)
         self._model = BGEM3FlagModel(
-            model_name_or_path=settings.embedding_model_name,
+            model_name_or_path=resolved_model,
             use_fp16=False,  # CPU doesn't benefit from FP16
         )
 

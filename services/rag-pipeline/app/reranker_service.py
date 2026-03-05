@@ -41,7 +41,7 @@ class RerankerService:
         self._model: FlagReranker | None = None
         self.start_time = time.time()
 
-    def load_model(self) -> None:
+    def load_model(self, model_name_or_path: str | None = None) -> None:
         """
         Load the BGE-Reranker-v2-m3 cross-encoder model.
 
@@ -51,14 +51,16 @@ class RerankerService:
         Raises:
             RuntimeError: If model loading fails.
         """
+        resolved_model = model_name_or_path or settings.reranker_model_name
+
         logger.info("Loading BGE-Reranker-v2-m3 model", extra={
-            "model": settings.reranker_model_name,
+            "model": resolved_model,
         })
 
         load_start = time.time()
 
         self._model = FlagReranker(
-            model_name_or_path=settings.reranker_model_name,
+            model_name_or_path=resolved_model,
             use_fp16=False,  # CPU: use FP32 for correctness
         )
 

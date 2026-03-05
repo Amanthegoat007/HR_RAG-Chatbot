@@ -7,6 +7,10 @@ ARCHITECTURE REF: §8 — Prompt Template
 ============================================================================
 """
 
+import re
+
+from app.config import settings
+
 # ---------------------------------------------------------------------------
 # SYSTEM PROMPT (English-only, quality-focused, markdown-formatted)
 # ---------------------------------------------------------------------------
@@ -18,30 +22,31 @@ ARCHITECTURE REF: §8 — Prompt Template
 # - Conservative temperature (0.1) set in config ensures deterministic answers
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are an HR Knowledge Assistant. Answer questions using ONLY the provided context documents.
+SYSTEM_PROMPT = """You are an HR Knowledge Assistant. Use ONLY the provided context.
 
-FORMAT RULES (FOLLOW STRICTLY):
-1. Start with a one-line direct answer.
-2. Use **bold** for all key terms, policy names, amounts, dates, and numbers.
-3. When listing multiple items, ALWAYS use a numbered list (1. 2. 3.) with each item on its own line.
-4. For each item in a list, bold the item name and add a dash before the description.
-5. At the end of your answer, cite your source(s) on a new line: (Source: filename, Page X)
-6. Keep answers clear and well-structured. Never dump raw text from the context.
-7. If the answer is not in the context, say: "This information is not available in the current HR knowledge base."
+Return output in this markdown schema:
+### Answer
+<one direct answer sentence>
 
-EXAMPLE OUTPUT:
-The main financial assistance programs are:
+1. <optional item>
+2. <optional item>
 
-1. **Deferred Payment Agreement (DPA)** — For balances between **$100** and **$1,000**, with a **3-6 month** installment plan
-2. **Extended Payment Plan (EPP)** — For larger balances, with a **6-12 month** interest-free plan
-3. **Budget Billing Program** — Equal monthly payments based on a **12-month** average
+(Source: filename | Section: section | Page: page)
+<END_ANSWER>
 
-(Source: Payment_Plans_Financial_Assistance.pdf, Page 2)
+Rules:
+1. Return valid markdown only.
+2. Keep it concise and factual.
+3. Use a numbered list only when multiple points are needed.
+4. Use bold only for key values and policy names.
+5. Never invent facts outside context.
+6. If missing, return exactly:
+   "This information is not available in the current HR knowledge base."
+7. End with exactly one citation line and then <END_ANSWER>.
 
-CONTEXT DOCUMENTS:
+Context:
 {context}
-
-Answer the following question using the context above."""
+"""
 
 # ---------------------------------------------------------------------------
 # CONTEXT TEMPLATE
@@ -50,16 +55,63 @@ Answer the following question using the context above."""
 # in the system prompt. The source attribution enables verifiable citations.
 # ---------------------------------------------------------------------------
 
-CONTEXT_TEMPLATE = """
----
-Source: {filename} | Section: {section} | Page: {page_number}
----
-{chunk_text}
-"""
+CONTEXT_TEMPLATE = """[Source: {filename} | Section: {section} | Page: {page_number}]
+{chunk_text}"""
+
+
+_STOPWORDS = {
+    "a", "an", "the", "is", "are", "to", "in", "of", "for", "and", "or",
+    "on", "with", "what", "which", "how", "when", "where", "who", "why",
+    "does", "do", "can", "should", "would", "from", "this", "that", "about",
+}
+
+
+def _extract_query_terms(query: str) -> set[str]:
+    words = re.findall(r"[a-zA-Z0-9$%]+", (query or "").lower())
+    return {w for w in words if len(w) > 2 and w not in _STOPWORDS}
+
+
+def _truncate_chunk_text(text: str, query_terms: set[str]) -> str:
+    """
+    Keep prompt context compact for faster first-token latency.
+    """
+    if not text:
+        return ""
+
+    cleaned = " ".join(text.split())
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    if not sentences:
+        return ""
+
+    max_sentences = max(1, min(settings.prompt_max_chunk_sentences, 4))
+
+    if not query_terms:
+        selected = sentences[:max_sentences]
+    else:
+        scored: list[tuple[int, int, str]] = []
+        for i, sentence in enumerate(sentences):
+            lowered = sentence.lower()
+            score = sum(1 for term in query_terms if term in lowered)
+            scored.append((score, i, sentence))
+
+        scored.sort(key=lambda row: (row[0], -row[1]), reverse=True)
+        top = sorted(scored[:max_sentences], key=lambda row: row[1])
+        selected = [row[2] for row in top]
+
+    compact = " ".join(selected).strip()
+    if not compact:
+        compact = cleaned
+
+    limit = max(180, min(settings.prompt_max_chunk_chars, 450))
+    if len(compact) <= limit:
+        return compact
+    return compact[:limit].rstrip() + " ..."
 
 
 
-def build_context_string(retrieved_chunks: list[dict]) -> str:
+def build_context_string(retrieved_chunks: list[dict], question: str) -> str:
     """
     Build the context string from a list of retrieved and reranked chunks.
 
@@ -79,13 +131,16 @@ def build_context_string(retrieved_chunks: list[dict]) -> str:
     if not retrieved_chunks:
         return "No relevant documents found in the knowledge base."
 
+    query_terms = _extract_query_terms(question)
+
     parts = []
-    for chunk in retrieved_chunks:
+    max_chunks = max(1, min(settings.prompt_max_chunks, 2))
+    for chunk in retrieved_chunks[:max_chunks]:
         parts.append(CONTEXT_TEMPLATE.format(
             filename=chunk.get("filename", "Unknown"),
             section=chunk.get("section", "Unknown Section"),
             page_number=chunk.get("page_number", "?"),
-            chunk_text=chunk.get("text", ""),
+            chunk_text=_truncate_chunk_text(chunk.get("text", ""), query_terms),
         ))
 
     return "\n".join(parts)
@@ -104,7 +159,7 @@ def build_prompt(question: str, retrieved_chunks: list[dict]) -> str:
     Returns:
         Complete prompt string for the LLM API.
     """
-    context = build_context_string(retrieved_chunks)
+    context = build_context_string(retrieved_chunks, question)
     return SYSTEM_PROMPT.format(context=context)
 
 

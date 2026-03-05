@@ -28,6 +28,17 @@ body,
     --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --app-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     --app-background-dark: #0f172a;
+    --app-source-card-bg: #f1f5f9;
+    --app-source-card-bg-hover: #e2e8f0;
+    --app-source-card-border: rgba(15, 23, 42, 0.08);
+    --app-source-card-border-active: rgba(16, 185, 129, 0.35);
+    --app-code-bg: #f8fafc;
+    --app-code-border: rgba(15, 23, 42, 0.08);
+    --app-accent-soft: rgba(16, 185, 129, 0.12);
+    --app-accent-soft-hover: rgba(16, 185, 129, 0.18);
+    --app-accent-border: rgba(16, 185, 129, 0.28);
+    --app-accent-border-strong: rgba(16, 185, 129, 0.42);
+    --app-accent-glow: rgba(16, 185, 129, 0.35);
 }
 
 /* Dark mode CSS variables */
@@ -48,6 +59,17 @@ body,
     --app-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
     --app-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
     --app-background-dark: #0f172a;
+    --app-source-card-bg: rgba(30, 41, 59, 0.65);
+    --app-source-card-bg-hover: rgba(51, 65, 85, 0.75);
+    --app-source-card-border: rgba(255, 255, 255, 0.08);
+    --app-source-card-border-active: rgba(16, 185, 129, 0.45);
+    --app-code-bg: rgba(15, 23, 42, 0.75);
+    --app-code-border: rgba(255, 255, 255, 0.08);
+    --app-accent-soft: rgba(16, 185, 129, 0.2);
+    --app-accent-soft-hover: rgba(16, 185, 129, 0.28);
+    --app-accent-border: rgba(16, 185, 129, 0.35);
+    --app-accent-border-strong: rgba(16, 185, 129, 0.5);
+    --app-accent-glow: rgba(16, 185, 129, 0.45);
 }
 
 

@@ -27,9 +27,17 @@ class RagSettings(BaseSettings):
     llm_circuit_breaker_recovery_seconds: int = 60
     llm_provider: str = "local"  # "local" | "azure_openai"
     llm_temperature: float = 0.1
-    llm_max_tokens: int = 512
+    llm_max_tokens: int = 256
+    llm_max_tokens_short: int = 120
+    llm_max_tokens_medium: int = 180
+    llm_max_tokens_long: int = 256
     llm_top_p: float = 0.95
+    llm_stop_sequence: str = "<END_ANSWER>"
+    llm_adaptive_tokens_enabled: bool = True
     llm_stream_timeout_seconds: float = 300.0
+    prompt_max_chunks: int = 2
+    prompt_max_chunk_chars: int = 450
+    prompt_max_chunk_sentences: int = 4
 
     # Azure OpenAI fallback (optional)
     azure_openai_endpoint: Optional[str] = None
@@ -49,6 +57,10 @@ class RagSettings(BaseSettings):
     reranker_batch_size: int = 16
     reranker_svc_url: str = "http://localhost:8005"  # Legacy, unused in consolidated mode
     reranker_timeout_seconds: float = 30.0
+
+    # ─── Model Download / Cache Warmup ─────────────────────────────────────
+    model_prefetch_on_startup: bool = True
+    model_download_workers: int = 16
 
     # ─── Retrieval & Reranking Pipeline ───────────────────────────────────
     retrieval_rerank_top_n: int = 20

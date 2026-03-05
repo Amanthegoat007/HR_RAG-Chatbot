@@ -42,6 +42,7 @@ from qdrant_client import AsyncQdrantClient
 from app.cache import SemanticCache
 from app.config import settings
 from app.embedding_service import embedding_service
+from app.generation_policy import GenerationPolicy, choose_generation_policy
 from app.llm_client import LLMUnavailableError, generate_stream
 from app.prompt_templates import build_prompt, format_as_mistral_chat
 from app.reranker_service import reranker_service
@@ -257,9 +258,29 @@ async def run_query_pipeline(
     # We need to collect the full answer text to store it in the cache.
     # We do this by consuming the generator and yielding tokens simultaneously.
     answer_tokens: list[str] = []
+    generation_policy = choose_generation_policy(normalized_query)
+    if not settings.llm_adaptive_tokens_enabled:
+        generation_policy = GenerationPolicy(
+            profile="fixed",
+            max_tokens=settings.llm_max_tokens,
+            stop=generation_policy.stop,
+        )
+    logger.debug(
+        "Generation policy selected",
+        extra={
+            "profile": generation_policy.profile,
+            "max_tokens": generation_policy.max_tokens,
+            "stop_count": len(generation_policy.stop),
+        },
+    )
 
     try:
-        token_generator = generate_stream(http_client, messages)
+        token_generator = generate_stream(
+            http_client,
+            messages,
+            max_tokens=generation_policy.max_tokens,
+            stop=generation_policy.stop,
+        )
 
         async for sse_event in build_query_stream(
             token_generator=token_generator,
@@ -287,7 +308,7 @@ async def run_query_pipeline(
 
     # ── Post-pipeline: Store in Cache ────────────────────────────────────────
     if answer_tokens and not document_id:
-        full_answer = "".join(answer_tokens)
+        full_answer = "".join(answer_tokens).replace(settings.llm_stop_sequence, "").strip()
         try:
             await cache.set(
                 query_embedding=dense_vector,

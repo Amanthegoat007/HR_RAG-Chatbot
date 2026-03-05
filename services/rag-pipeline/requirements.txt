@@ -13,6 +13,8 @@ supervisor>=4.2.5
 # BGE-M3 Embedding requirements
 FlagEmbedding==1.2.10
 sentence-transformers>=2.2.0
+huggingface_hub>=0.24.0
+hf_transfer>=0.1.8
 
 # LLM integration (C++ llama.cpp handles inference via subprocess script in supervisord)
 # Python just needs to talk to the local 8080 port exposed by llama-server

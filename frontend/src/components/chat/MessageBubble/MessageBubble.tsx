@@ -43,6 +43,17 @@ interface SourceCitation {
   detail: string; // page/section info
 }
 
+function normalizeAssistantMarkdown(rawText: string): string {
+  return rawText
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/([.!?])\s+(\d+\.\s+)/g, "$1\n\n$2")
+    .replace(/(\d+\.)\s+—\s+/g, "$1 ")
+    .trim();
+}
+
 /**
  * Extracts source citations from LLM text in various formats:
  *   - (Source: file | Section: X | Page: Y)
@@ -211,7 +222,7 @@ function ExpandableSourceCard({ source }: { source: any }) {
         <div className={classes.sourceCardBody}>
           <Text
             size="sm"
-            c="#94a3b8"
+            c="var(--app-text-secondary)"
             style={{ lineHeight: 1.6, whiteSpace: "pre-wrap" }}
           >
             {text}
@@ -270,7 +281,8 @@ const FileCard = ({ name }: { name: string }) => (
     radius="md"
     my="sm"
     style={{
-      backgroundColor: "#f8fafc",
+      backgroundColor: "var(--app-surface-hover)",
+      borderColor: "var(--app-border)",
       display: "flex",
       alignItems: "center",
       gap: "12px",
@@ -284,20 +296,20 @@ const FileCard = ({ name }: { name: string }) => (
         width: "40px",
         height: "40px",
         borderRadius: "8px",
-        backgroundColor: "#ecfccb",
+        backgroundColor: "var(--app-surface)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#65a30d",
+        color: "var(--app-accent-primary)",
       }}
     >
       <TbFileDescription size={24} />
     </Box>
     <Box style={{ flex: 1, overflow: "hidden" }}>
-      <Text size="sm" fw={600} truncate c="#1e293b">
+      <Text size="sm" fw={600} truncate c="var(--app-text-primary)">
         {name}
       </Text>
-      <Text size="xs" c="dimmed">
+      <Text size="xs" c="var(--app-text-secondary)">
         File Attachment
       </Text>
     </Box>
@@ -426,11 +438,11 @@ export default function MessageBubble({
         alignSelf: isUser ? "flex-end" : "flex-start",
         maxWidth: "80%",
         width: isUser ? "fit-content" : "100%",
-        background: isUser ? "#ffffff" : "transparent",
-        color: isUser ? "#334155" : "inherit",
-        border: isUser ? "1px solid rgba(0,0,0,0.05)" : "none",
+        background: isUser ? "var(--app-surface)" : "transparent",
+        color: isUser ? "var(--app-text-primary)" : "inherit",
+        border: isUser ? "1px solid var(--app-border)" : "none",
         transition: "250ms cubic-bezier(0.4, 0, 0.2, 1)",
-        boxShadow: isUser ? "0 4px 6px -1px rgba(0, 0, 0, 0.05)" : "none",
+        boxShadow: isUser ? "var(--app-shadow-sm)" : "none",
         animation: "slideUp 0.3s ease-out",
         display: "flex",
         gap: "12px",
@@ -447,13 +459,19 @@ export default function MessageBubble({
             borderRadius: "50%",
             marginTop: 20,
             flexShrink: 0,
-            background: "linear-gradient(135deg, #4ade80 0%, #ece019 100%)",
+            background:
+              "linear-gradient(135deg, var(--app-accent-primary) 0%, var(--app-accent-secondary) 100%)",
           }}
         />
       )}
       <Box style={{ flex: 1, minWidth: 0, width: "100%" }}>
         {!isUser && content.extras?.title && (
-          <Title order={4} mb="xs" c="#1e293b" style={{ fontWeight: 600 }}>
+          <Title
+            order={4}
+            mb="xs"
+            c="var(--app-text-primary)"
+            style={{ fontWeight: 600 }}
+          >
             {content.extras.title}
           </Title>
         )}
@@ -469,7 +487,9 @@ export default function MessageBubble({
                 <Stack gap="md">
                   {content.blocks.map((block, index) => {
                     switch (block.type) {
-                      case "text":
+                      case "text": {
+                        const normalizedBlockMarkdown =
+                          normalizeAssistantMarkdown(block.content || "");
                         return (
                           <Box
                             key={index}
@@ -483,10 +503,11 @@ export default function MessageBubble({
                               remarkPlugins={[remarkGfm]}
                               components={markdownComponents}
                             >
-                              {block.content}
+                              {normalizedBlockMarkdown}
                             </ReactMarkdown>
                           </Box>
                         );
+                      }
                       case "table":
                         return (
                           <ChatTable
@@ -556,6 +577,9 @@ export default function MessageBubble({
             const { cleanText: answerText, citations } = !isUser
               ? extractSourceCitations(textForParsing)
               : { cleanText: textForParsing, citations: [] };
+            const markdownText = !isUser
+              ? normalizeAssistantMarkdown(answerText)
+              : answerText;
 
             return (
               <>
@@ -571,7 +595,7 @@ export default function MessageBubble({
                     remarkPlugins={[remarkGfm]}
                     components={markdownComponents}
                   >
-                    {answerText}
+                    {markdownText}
                   </ReactMarkdown>
                 </Box>
                 {!isUser && (
@@ -637,16 +661,19 @@ export default function MessageBubble({
               {/* Related Section */}
               {content.extras?.related && content.extras.related.length > 0 && (
                 <Box>
-                  <Text fw={600} size="md" mb="xs" c="#334155">
+                  <Text fw={600} size="md" mb="xs" c="var(--app-text-primary)">
                     Related
                   </Text>
                   <Stack>
                     {content.extras.related.map((link: string, i: number) => (
                       <Group key={i} gap="xs" style={{ cursor: "pointer" }}>
-                        <TbCornerDownRight size={14} color="#84cc16" />
+                        <TbCornerDownRight
+                          size={14}
+                          color="var(--app-accent-primary)"
+                        />
                         <Text
                           size="md"
-                          c="#65a30d"
+                          c="var(--app-accent-primary)"
                           style={{
                             "&:hover": { textDecoration: "underline" },
                           }}

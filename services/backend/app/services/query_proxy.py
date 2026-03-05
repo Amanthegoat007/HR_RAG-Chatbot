@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 from fastapi import HTTPException
 
 from app.config import settings
+from app.services.response_formatter import normalize_markdown_answer
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ async def stream_rag_pipeline(
     }
 
     collected_tokens: list[str] = []
+    latest_sources: list[dict] = []
+    current_event: str | None = None
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -44,7 +47,7 @@ async def stream_rag_pipeline(
                         continue
 
                     if line.startswith("event:"):
-                        event_type = line.split(":", 1)[1].strip()
+                        current_event = line.split(":", 1)[1].strip()
                         continue
 
                     if line.startswith("data:"):
@@ -58,20 +61,21 @@ async def stream_rag_pipeline(
                             continue
 
                         # Collect tokens for DB save
-                        if "token" in data:
+                        if current_event == "token" and "token" in data:
                             collected_tokens.append(data["token"])
                             yield f"data: {json.dumps({'type': 'token', 'content': data['token']})}\n\n"
 
-                        elif "stage" in data:
+                        elif current_event == "stage" and "stage" in data:
                             yield f"data: {json.dumps({'type': 'stage', 'stage': data['stage'], 'label': data.get('label', ''), 'status': data.get('status', 'active')})}\n\n"
 
-                        elif "sources" in data:
+                        elif current_event == "sources" and "sources" in data:
+                            latest_sources = data["sources"] or []
                             yield f"data: {json.dumps({'type': 'sources', 'sources': data['sources']})}\n\n"
 
-                        elif "error" in data:
+                        elif current_event == "error" and "error" in data:
                             yield f"data: {json.dumps({'type': 'error', 'content': data['error']})}\n\n"
 
-                        elif "status" in data and data["status"] == "complete":
+                        elif current_event == "done" and data.get("status") == "complete":
                             pass  # Will send done below
 
     except httpx.HTTPStatusError as exc:
@@ -83,7 +87,7 @@ async def stream_rag_pipeline(
         yield f"data: {json.dumps({'type': 'error', 'content': 'An internal error occurred. Please try again.'})}\n\n"
 
     # Yield the collected text as a special internal event
-    full_text = "".join(collected_tokens)
+    full_text = normalize_markdown_answer("".join(collected_tokens), latest_sources)
     yield f"data: {json.dumps({'type': 'done', 'fullText': full_text})}\n\n"
 
 
@@ -103,6 +107,8 @@ async def query_rag_pipeline(
     }
 
     assistant_message = ""
+    latest_sources: list[dict] = []
+    current_event: str | None = None
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -110,22 +116,31 @@ async def query_rag_pipeline(
                 "POST",
                 f"{settings.rag_pipeline_url}/query",
                 json=payload
-            ) as response:
+                ) as response:
                 response.raise_for_status()
 
                 async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            chunk = json.loads(data_str)
-                            if "token" in chunk:
-                                assistant_message += chunk["token"]
-                            elif "error" in chunk:
-                                assistant_message = chunk["error"]
-                        except json.JSONDecodeError:
-                            pass
+                    if line.startswith("event:"):
+                        current_event = line.split(":", 1)[1].strip()
+                        continue
+                    if not line.startswith("data:"):
+                        continue
+
+                    data_str = line[5:].strip()
+                    if data_str == "[DONE]":
+                        break
+
+                    try:
+                        chunk = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+
+                    if current_event == "token" and "token" in chunk:
+                        assistant_message += chunk["token"]
+                    elif current_event == "sources" and "sources" in chunk:
+                        latest_sources = chunk["sources"] or []
+                    elif current_event == "error" and "error" in chunk:
+                        assistant_message = chunk["error"]
     except httpx.HTTPStatusError as exc:
         logger.error("RAG pipeline returned error", exc_info=True, extra={"status": exc.response.status_code})
         raise HTTPException(status_code=502, detail="The RAG pipeline returned an error. Please try again.")
@@ -133,4 +148,4 @@ async def query_rag_pipeline(
         logger.error("RAG query failed", exc_info=True)
         raise HTTPException(status_code=500, detail="An internal error occurred. Please try again.")
 
-    return assistant_message
+    return normalize_markdown_answer(assistant_message, latest_sources)

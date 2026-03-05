@@ -17,7 +17,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Supported formats
-DOCLING_FORMATS = {"pdf", "docx", "xlsx", "pptx"}
+# Keep PDF on a simple PyMuPDF path to avoid heavy Docling model downloads.
+DOCLING_FORMATS = {"docx", "xlsx", "pptx"}
 TEXT_FORMATS = {"txt", "md"}
 
 
@@ -25,7 +26,7 @@ def convert_to_markdown(file_bytes: bytes, filename: str) -> tuple[str, int]:
     """
     Convert an uploaded file to Markdown text.
 
-    Uses docling for PDF/DOCX/XLSX/PPTX, plain decode for TXT/MD.
+    Uses PyMuPDF for PDF, Docling for DOCX/XLSX/PPTX, plain decode for TXT/MD.
 
     Args:
         file_bytes: Raw file content.
@@ -42,7 +43,9 @@ def convert_to_markdown(file_bytes: bytes, filename: str) -> tuple[str, int]:
         "size_bytes": len(file_bytes),
     })
 
-    if suffix in DOCLING_FORMATS:
+    if suffix == "pdf":
+        return _convert_pdf_with_fitz(file_bytes, filename)
+    elif suffix in DOCLING_FORMATS:
         return _convert_with_docling(file_bytes, filename, suffix)
     elif suffix in TEXT_FORMATS:
         text = file_bytes.decode("utf-8", errors="ignore")
