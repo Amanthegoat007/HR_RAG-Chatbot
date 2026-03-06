@@ -130,9 +130,16 @@ def build_chunk_payload(
 
         # Additional metadata for citation quality
         "page_number": chunk.page_number,
+        "page_start": getattr(chunk, "page_start", chunk.page_number),
+        "page_end": getattr(chunk, "page_end", chunk.page_number),
         "chunk_index": chunk.chunk_index,
         "heading_path": " > ".join(chunk.heading_path) if chunk.heading_path else "",
         "token_count": chunk.token_count,
+        "content_type": getattr(chunk, "content_type", "paragraph"),
+        "contains_currency": getattr(chunk, "contains_currency", False),
+        "contains_steps": getattr(chunk, "contains_steps", False),
+        "contains_ranges": getattr(chunk, "contains_ranges", False),
+        "evidence_tags": getattr(chunk, "evidence_tags", []),
 
         # The actual chunk text — returned by Qdrant so we don't need a separate DB lookup
         "text": chunk.text,

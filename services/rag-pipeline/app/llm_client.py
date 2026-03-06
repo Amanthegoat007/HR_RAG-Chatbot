@@ -197,6 +197,7 @@ async def _call_local_llm(
     messages: list[dict[str, str]],
     max_tokens: Optional[int] = None,
     stop: Optional[list[str]] = None,
+    temperature: Optional[float] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Call the local llama.cpp HTTP server with streaming enabled.
@@ -219,7 +220,7 @@ async def _call_local_llm(
         "model": "mistral",         # llama.cpp ignores model name but needs it
         "messages": messages,
         "stream": True,
-        "temperature": settings.llm_temperature,
+        "temperature": settings.llm_temperature if temperature is None else temperature,
         "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
         "top_p": settings.llm_top_p,
     }
@@ -247,6 +248,7 @@ async def _call_azure_openai(
     messages: list[dict[str, str]],
     max_tokens: Optional[int] = None,
     stop: Optional[list[str]] = None,
+    temperature: Optional[float] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Call Azure OpenAI as fallback when the local LLM is unavailable.
@@ -283,7 +285,7 @@ async def _call_azure_openai(
     payload = {
         "messages": messages,
         "stream": True,
-        "temperature": settings.llm_temperature,
+        "temperature": settings.llm_temperature if temperature is None else temperature,
         "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
     }
     if stop:
@@ -315,6 +317,7 @@ async def generate_stream(
     messages: list[dict[str, str]],
     max_tokens: Optional[int] = None,
     stop: Optional[list[str]] = None,
+    temperature: Optional[float] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Generate a streaming LLM response, automatically selecting the provider.
@@ -347,6 +350,7 @@ async def generate_stream(
             messages,
             max_tokens=max_tokens,
             stop=stop,
+            temperature=temperature,
         ):
             yield token
         return
@@ -360,6 +364,7 @@ async def generate_stream(
                 messages,
                 max_tokens=max_tokens,
                 stop=stop,
+                temperature=temperature,
             ):
                 yield token
                 token_count += 1
@@ -383,5 +388,6 @@ async def generate_stream(
         messages,
         max_tokens=max_tokens,
         stop=stop,
+        temperature=temperature,
     ):
         yield token

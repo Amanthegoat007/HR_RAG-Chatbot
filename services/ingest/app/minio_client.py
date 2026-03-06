@@ -165,6 +165,51 @@ def upload_markdown(
     return object_name
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=4),
+    reraise=True,
+)
+def upload_text_artifact(
+    client: Minio,
+    document_id: str,
+    relative_name: str,
+    content: str,
+    content_type: str,
+    artifact_type: str,
+) -> str:
+    """
+    Upload a text-based artifact related to normalization/parsing.
+
+    Example object names:
+      originals/{document_id}/normalized.md
+      originals/{document_id}/normalized.json
+      originals/{document_id}/parse_report.json
+    """
+    object_name = f"originals/{document_id}/{relative_name}"
+    payload = (content or "").encode("utf-8")
+
+    client.put_object(
+        bucket_name=settings.minio_bucket_name,
+        object_name=object_name,
+        data=io.BytesIO(payload),
+        length=len(payload),
+        content_type=content_type,
+        metadata={"document_id": document_id, "type": artifact_type},
+    )
+
+    logger.info(
+        "Artifact uploaded to MinIO",
+        extra={
+            "document_id": document_id,
+            "object_name": object_name,
+            "artifact_type": artifact_type,
+            "size_bytes": len(payload),
+        },
+    )
+    return object_name
+
+
 def download_file(client: Minio, object_name: str) -> bytes:
     """
     Download a file from MinIO.

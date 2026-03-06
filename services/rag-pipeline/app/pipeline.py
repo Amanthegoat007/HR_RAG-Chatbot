@@ -39,8 +39,10 @@ from typing import Any, AsyncGenerator, Optional
 import httpx
 from qdrant_client import AsyncQdrantClient
 
+from app.answer_planner import classify_question, plan_answer, render_answer_plan
 from app.cache import SemanticCache
 from app.config import settings
+from app.context_selector import select_context_chunks
 from app.embedding_service import embedding_service
 from app.generation_policy import GenerationPolicy, choose_generation_policy
 from app.llm_client import LLMUnavailableError, generate_stream
@@ -106,11 +108,13 @@ async def run_query_pipeline(
     """
     # ── Step 1: Normalize ────────────────────────────────────────────────────
     normalized_query = _normalize_query(query)
+    question_type = classify_question(normalized_query)
     logger.info(
         "RAG pipeline started",
         extra={
             "query_len": len(normalized_query),
             "document_scoped": document_id is not None,
+            "question_type": question_type,
         },
     )
 
@@ -148,12 +152,13 @@ async def run_query_pipeline(
             logger.info("Cache HIT — returning cached answer")
             cached_answer = cached_result.get("answer", "")
             cached_sources = cached_result.get("sources", [])
+            cached_meta = cached_result.get("meta", {})
 
             # Stream cached answer as a single token event
             # (We could split into individual tokens but it's not worth the complexity)
             yield make_token_event(cached_answer)
             yield make_sources_event(cached_sources)
-            yield make_done_event()
+            yield make_done_event(cached_meta)
             return
 
     logger.debug("Cache MISS — running full RAG pipeline")
@@ -199,6 +204,12 @@ async def run_query_pipeline(
 
     # ── Step 4: Cross-Encoder Reranking ────────────────────────────────────
     try:
+        rerank_top_n = settings.top_n_rerank
+        if question_type == "calc":
+            rerank_top_n = max(rerank_top_n, settings.top_n_rerank_calc)
+        elif question_type == "list":
+            rerank_top_n = max(rerank_top_n, settings.top_n_rerank_list)
+
         docs_for_reranker = [
             {
                 "text": chunk.get("text", ""),
@@ -211,7 +222,7 @@ async def run_query_pipeline(
         ranked = reranker_service.rerank(
             query=normalized_query,
             documents=docs_for_reranker,
-            top_n=settings.top_n_rerank,
+            top_n=rerank_top_n,
         )
         
         # Merge rerank scores back into the ORIGINAL retrieved chunks
@@ -236,7 +247,7 @@ async def run_query_pipeline(
         # Add dummy rerank scores so downstream code works
         reranked_chunks = [
             {**chunk, "rerank_score": chunk.get("score", 0.0), "rerank_rank": idx + 1}
-            for idx, chunk in enumerate(retrieved_chunks[:settings.top_n_rerank])
+            for idx, chunk in enumerate(retrieved_chunks[:rerank_top_n])
         ]
 
     yield make_stage_event("reranking", "Results ranked", "done")
@@ -244,32 +255,79 @@ async def run_query_pipeline(
     # ── Stage: Generating ─────────────────────────────────────────────────────
     yield make_stage_event("generating", "Generating response...", "active")
 
-    # ── Step 5: Build LLM Prompt ─────────────────────────────────────────────
+    answer_plan = plan_answer(
+        query=normalized_query,
+        retrieved_chunks=retrieved_chunks,
+        reranked_chunks=reranked_chunks,
+    )
+    selected_chunks = select_context_chunks(
+        question_type=question_type,
+        query=normalized_query,
+        retrieved_chunks=retrieved_chunks,
+        reranked_chunks=reranked_chunks,
+        answer_plan=answer_plan,
+    )
+    source_chunks = answer_plan.citation_chunks or selected_chunks
+    response_meta = {
+        "answer_path": answer_plan.answer_path,
+        "question_type": question_type,
+        "deterministic_confidence": round(answer_plan.deterministic_confidence, 3),
+    }
+
+    if answer_plan.high_confidence and answer_plan.answer_path == "deterministic":
+        deterministic_answer = render_answer_plan(answer_plan)
+        yield make_token_event(deterministic_answer)
+        yield make_sources_event(source_chunks)
+        yield make_done_event(response_meta)
+
+        if not document_id:
+            try:
+                await cache.set(
+                    query_embedding=dense_vector,
+                    answer=deterministic_answer,
+                    sources=source_chunks,
+                    meta=response_meta,
+                )
+                logger.debug("Deterministic answer stored in semantic cache")
+            except Exception as exc:
+                logger.warning("Failed to cache deterministic answer", extra={"error": str(exc)})
+
+        logger.info(
+            "RAG pipeline complete",
+            extra={
+                "retrieved": len(retrieved_chunks),
+                "reranked": len(reranked_chunks),
+                "answer_path": "deterministic",
+                "question_type": question_type,
+            },
+        )
+        return
+
     system_prompt_with_context = build_prompt(
         question=normalized_query,
-        retrieved_chunks=reranked_chunks,
+        retrieved_chunks=selected_chunks,
+        answer_plan=answer_plan,
     )
     messages = format_as_mistral_chat(
         system_prompt=system_prompt_with_context,
         question=normalized_query,
     )
 
-    # ── Step 6: Stream LLM Response + Collect for Cache ─────────────────────
-    # We need to collect the full answer text to store it in the cache.
-    # We do this by consuming the generator and yielding tokens simultaneously.
     answer_tokens: list[str] = []
-    generation_policy = choose_generation_policy(normalized_query)
+    generation_policy = choose_generation_policy(normalized_query, question_type=question_type)
     if not settings.llm_adaptive_tokens_enabled:
         generation_policy = GenerationPolicy(
             profile="fixed",
             max_tokens=settings.llm_max_tokens,
             stop=generation_policy.stop,
+            temperature=generation_policy.temperature,
         )
     logger.debug(
         "Generation policy selected",
         extra={
             "profile": generation_policy.profile,
             "max_tokens": generation_policy.max_tokens,
+            "temperature": generation_policy.temperature,
             "stop_count": len(generation_policy.stop),
         },
     )
@@ -280,11 +338,13 @@ async def run_query_pipeline(
             messages,
             max_tokens=generation_policy.max_tokens,
             stop=generation_policy.stop,
+            temperature=generation_policy.temperature,
         )
 
         async for sse_event in build_query_stream(
             token_generator=token_generator,
-            source_chunks=reranked_chunks,
+            source_chunks=source_chunks,
+            done_meta=response_meta,
         ):
             # Intercept token events to collect the answer text
             # (build_query_stream yields ServerSentEvent objects)
@@ -303,7 +363,7 @@ async def run_query_pipeline(
             "The AI assistant is currently unavailable. Please try again later.",
             code="llm_unavailable",
         )
-        yield make_done_event()
+        yield make_done_event(response_meta)
         return
 
     # ── Post-pipeline: Store in Cache ────────────────────────────────────────
@@ -313,7 +373,8 @@ async def run_query_pipeline(
             await cache.set(
                 query_embedding=dense_vector,
                 answer=full_answer,
-                sources=reranked_chunks,
+                sources=source_chunks,
+                meta=response_meta,
             )
             logger.debug("Answer stored in semantic cache")
         except Exception as exc:
@@ -326,5 +387,7 @@ async def run_query_pipeline(
             "retrieved": len(retrieved_chunks),
             "reranked": len(reranked_chunks),
             "answer_tokens": len(answer_tokens),
+            "answer_path": "llm",
+            "question_type": question_type,
         },
     )

@@ -38,6 +38,12 @@ class RagSettings(BaseSettings):
     prompt_max_chunks: int = 2
     prompt_max_chunk_chars: int = 450
     prompt_max_chunk_sentences: int = 4
+    deterministic_answers_enabled: bool = False
+    deterministic_calc_enabled: bool = False
+    deterministic_list_enabled: bool = False
+    deterministic_confidence_threshold: float = 0.8
+    calc_context_max_chunks: int = 2
+    list_context_max_chunks: int = 3
 
     # Azure OpenAI fallback (optional)
     azure_openai_endpoint: Optional[str] = None
@@ -69,6 +75,8 @@ class RagSettings(BaseSettings):
     hybrid_search_alpha: float = 0.5
     top_k_retrieval: int = 20
     top_n_rerank: int = 3
+    top_n_rerank_calc: int = 4
+    top_n_rerank_list: int = 6
     score_threshold: float = 0.2
 
     # ─── Semantic Cache ───────────────────────────────────────────────

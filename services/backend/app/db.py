@@ -136,12 +136,17 @@ async def update_document_status(
         "chunk_count": "chunk_count",
         "error_message": "error_message",
         "processed_at": "processed_at",
+        "metadata": "metadata",
     }
 
     for kwarg_key, db_col in field_map.items():
         if kwarg_key in kwargs:
             set_parts.append(f"{db_col} = ${param_idx}")
-            params.append(kwargs[kwarg_key])
+            value = kwargs[kwarg_key]
+            if kwarg_key == "metadata":
+                value = json.dumps(value)
+                set_parts[-1] = f"{db_col} = ${param_idx}::jsonb"
+            params.append(value)
             param_idx += 1
 
     if status in ("ready", "failed") and "processed_at" not in kwargs:

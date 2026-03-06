@@ -11,12 +11,15 @@ python-multipart==0.0.9   # Required for FastAPI file upload (UploadFile)
 
 # Document processing — the "Convert to Markdown" pipeline (Architecture §3.1)
 pymupdf==1.24.1            # PyMuPDF: fast PDF text+table extraction
-unstructured[all-docs]==0.14.4  # Handles complex layouts, OCR integration
-python-docx                # DOCX extraction (version managed by unstructured)
-openpyxl==3.1.2            # XLSX extraction
-python-pptx==0.6.23        # PPTX extraction
+unstructured==0.14.4       # Lightweight fallback parser core (avoid heavy GPU inference deps)
+pdfminer.six>=20221105     # Ensure PDF fast-path support for unstructured
+pypdf>=4.0.0               # Ensure PDF parsing primitives are available
+python-docx>=1.1.2,<2.0.0  # DOCX native fallback
+openpyxl>=3.1.5,<4.0.0     # XLSX native fallback (Docling-compatible)
+python-pptx>=1.0.2,<2.0.0  # PPTX native fallback (Docling-compatible)
 python-magic==0.4.27       # MIME type detection (requires libmagic1 system package)
 pytesseract==0.3.10        # Python wrapper for Tesseract OCR
+docling>=2.1.0             # Primary parser for unified PDF/Office normalization
 
 # Text chunking
 tiktoken==0.7.0            # Token counting (same tokenizer as GPT models, accurate for Mistral too)

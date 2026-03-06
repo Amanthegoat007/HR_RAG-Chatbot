@@ -6,6 +6,7 @@ class QueryRequest(BaseModel):
     conversation_id: str = Field("new", description="Session ID for conversation history tracking")
     stream: bool = Field(True, description="Whether to stream the response via SSE")
     language: str = Field("en", description="Preferred response language")
+    document_id: Optional[str] = Field(None, description="Optional document UUID to scope retrieval to a single document")
     
 class HealthResponse(BaseModel):
     status: str

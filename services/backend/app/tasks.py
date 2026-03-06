@@ -34,6 +34,7 @@ from typing import Any
 
 import asyncpg
 import httpx
+import redis.asyncio as aioredis
 
 from app.celery_app import celery_app
 from app.config import settings
@@ -104,6 +105,205 @@ async def _embed_chunks(
     return all_results
 
 
+async def _invalidate_semantic_cache() -> None:
+    redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
+    try:
+        cursor = 0
+        while True:
+            cursor, keys = await redis_client.scan(
+                cursor=cursor,
+                match="semantic_cache:*",
+                count=100,
+            )
+            if keys:
+                await redis_client.delete(*keys)
+            if cursor == 0:
+                break
+    finally:
+        await redis_client.close()
+
+
+async def process_document_async(
+    document_id: str,
+    task_id: str,
+) -> dict[str, Any]:
+    """
+    Shared document processing pipeline used by Celery and the manual backfill script.
+    """
+    task_start = time.time()
+    db_pool = await asyncpg.create_pool(dsn=settings.postgres_dsn, min_size=1, max_size=3)
+    minio_client = get_minio_client()
+    qdrant_client = get_qdrant_client()
+
+    try:
+        from app.db import get_document, update_document_status, update_ingestion_job, write_audit_log
+
+        doc = await get_document(db_pool, document_id)
+        if not doc:
+            raise ValueError(f"Document not found: {document_id}")
+
+        filename = doc["filename"]
+        minio_path = doc["minio_path"]
+
+        await update_document_status(db_pool, document_id, "processing", error_message=None)
+        await update_ingestion_job(
+            db_pool,
+            task_id,
+            "processing",
+            started_at=datetime.utcnow(),
+        )
+
+        logger.info("Downloading file from MinIO", extra={"path": minio_path})
+        file_bytes = download_file(minio_client, minio_path)
+
+        step_start = time.time()
+        logger.info("Converting document to Markdown", extra={"doc_filename": filename})
+        markdown_text, page_count = convert_to_markdown(file_bytes, filename)
+        conversion_time = time.time() - step_start
+
+        logger.info("Markdown conversion complete", extra={
+            "doc_filename": filename,
+            "pages": page_count,
+            "markdown_chars": len(markdown_text),
+            "time_s": round(conversion_time, 2),
+        })
+
+        markdown_path = upload_markdown(minio_client, document_id, markdown_text)
+
+        step_start = time.time()
+        chunks = chunk_markdown(
+            markdown_text,
+            chunk_size=settings.chunk_size_tokens,
+            overlap=settings.chunk_overlap_tokens,
+        )
+        chunking_time = time.time() - step_start
+
+        logger.info("Chunking complete", extra={
+            "chunk_count": len(chunks),
+            "time_s": round(chunking_time, 2),
+        })
+
+        if not chunks:
+            raise ValueError("No chunks generated — document may be empty or unreadable")
+
+        document_metadata = build_document_metadata(
+            markdown_text=markdown_text,
+            filename=filename,
+            file_size_bytes=doc["file_size_bytes"],
+            chunk_count=len(chunks),
+        )
+
+        step_start = time.time()
+        async with httpx.AsyncClient(timeout=120.0) as http_client:
+            embed_results = await _embed_chunks(chunks, http_client)
+        embedding_time = time.time() - step_start
+
+        logger.info("Embedding complete", extra={
+            "chunk_count": len(chunks),
+            "time_s": round(embedding_time, 2),
+        })
+
+        step_start = time.time()
+        delete_document_vectors(qdrant_client, document_id)
+
+        points = []
+        for chunk, embed_result in zip(chunks, embed_results):
+            payload = build_chunk_payload(chunk, document_id, filename)
+            points.append({
+                "point_id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{document_id}:{chunk.chunk_index}")),
+                "dense_vector": embed_result["dense"]["values"],
+                "sparse_indices": embed_result["sparse"]["indices"],
+                "sparse_values": embed_result["sparse"]["values"],
+                "payload": payload,
+            })
+
+        upserted = upsert_chunks(qdrant_client, points)
+        upsert_time = time.time() - step_start
+
+        logger.info("Qdrant upsert complete", extra={
+            "upserted": upserted,
+            "time_s": round(upsert_time, 2),
+        })
+
+        total_time = time.time() - task_start
+        await update_document_status(
+            db_pool,
+            document_id,
+            "ready",
+            markdown_path=markdown_path,
+            page_count=page_count,
+            chunk_count=len(chunks),
+            metadata=document_metadata,
+        )
+        await update_ingestion_job(
+            db_pool,
+            task_id,
+            "completed",
+            completed_at=datetime.utcnow(),
+            processing_time_seconds=round(total_time, 2),
+        )
+
+        await write_audit_log(
+            db_pool,
+            "ingestion_complete",
+            role=None,
+            username=None,
+            ip_address=None,
+            details={
+                "document_id": document_id,
+                "filename": filename,
+                "chunk_count": len(chunks),
+                "processing_time_s": round(total_time, 2),
+            },
+        )
+        await _invalidate_semantic_cache()
+
+        result = {
+            "status": "completed",
+            "document_id": document_id,
+            "chunks": len(chunks),
+            "pages": page_count,
+            "time_s": round(total_time, 2),
+        }
+        logger.info("Document processing complete", extra=result)
+        return result
+
+    except Exception as exc:
+        error_msg = str(exc)
+        logger.error("Document processing failed", extra={
+            "document_id": document_id,
+            "error": error_msg,
+        })
+
+        from app.db import update_document_status, update_ingestion_job, write_audit_log
+        await update_document_status(
+            db_pool,
+            document_id,
+            "failed",
+            error_message=error_msg,
+        )
+        await update_ingestion_job(
+            db_pool,
+            task_id,
+            "failed",
+            completed_at=datetime.utcnow(),
+            error_message=error_msg,
+            processing_time_seconds=round(time.time() - task_start, 2),
+        )
+        await write_audit_log(
+            db_pool,
+            "ingestion_failed",
+            role=None,
+            username=None,
+            ip_address=None,
+            details={"document_id": document_id, "error": error_msg},
+        )
+        raise
+
+    finally:
+        await db_pool.close()
+
+
 @celery_app.task(
     name="app.tasks.process_document",
     bind=True,
@@ -135,191 +335,14 @@ def process_document(self, document_id: str) -> dict[str, Any]:
     Raises:
         Celery retries on transient errors (network timeouts, service restarts).
     """
-    task_start = time.time()
     logger.info("Processing document", extra={
         "document_id": document_id,
         "task_id": self.request.id,
     })
 
-    # Use asyncio.run equivalent — Celery is synchronous, so we bridge to async
     loop = _get_event_loop()
-
-    async def _run_pipeline() -> dict[str, Any]:
-        """Inner async function containing all async operations."""
-        db_pool = await asyncpg.create_pool(dsn=settings.postgres_dsn, min_size=1, max_size=3)
-        minio_client = get_minio_client()
-        qdrant_client = get_qdrant_client()
-
-        try:
-            # ---------------------------------------------------------------
-            # STEP 1: Fetch document record from PostgreSQL
-            # ---------------------------------------------------------------
-            from app.db import get_document, update_document_status, update_ingestion_job, write_audit_log
-
-            doc = await get_document(db_pool, document_id)
-            if not doc:
-                raise ValueError(f"Document not found: {document_id}")
-
-            filename = doc["filename"]
-            minio_path = doc["minio_path"]
-
-            # Mark as processing
-            await update_document_status(db_pool, document_id, "processing")
-            await update_ingestion_job(
-                db_pool, self.request.id, "processing",
-                started_at=datetime.utcnow(),
-            )
-
-            # ---------------------------------------------------------------
-            # STEP 2: Download file from MinIO
-            # ---------------------------------------------------------------
-            logger.info("Downloading file from MinIO", extra={"path": minio_path})
-            file_bytes = download_file(minio_client, minio_path)
-
-            # ---------------------------------------------------------------
-            # STEP 3: Convert to Markdown (★ signature optimization)
-            # ---------------------------------------------------------------
-            step_start = time.time()
-            logger.info("Converting document to Markdown", extra={"doc_filename": filename})
-            markdown_text, page_count = convert_to_markdown(file_bytes, filename)
-            conversion_time = time.time() - step_start
-
-            logger.info("Markdown conversion complete", extra={
-                "doc_filename": filename,
-                "pages": page_count,
-                "markdown_chars": len(markdown_text),
-                "time_s": round(conversion_time, 2),
-            })
-
-            # ---------------------------------------------------------------
-            # STEP 4: Upload Markdown to MinIO (for audit/debug)
-            # ---------------------------------------------------------------
-            markdown_path = upload_markdown(minio_client, document_id, markdown_text)
-
-            # ---------------------------------------------------------------
-            # STEP 5: Chunk the Markdown
-            # ---------------------------------------------------------------
-            step_start = time.time()
-            chunks = chunk_markdown(
-                markdown_text,
-                chunk_size=settings.chunk_size_tokens,
-                overlap=settings.chunk_overlap_tokens,
-            )
-            chunking_time = time.time() - step_start
-
-            logger.info("Chunking complete", extra={
-                "chunk_count": len(chunks),
-                "time_s": round(chunking_time, 2),
-            })
-
-            if not chunks:
-                raise ValueError("No chunks generated — document may be empty or unreadable")
-
-            # ---------------------------------------------------------------
-            # STEP 6: Embed all chunks via embedding-svc
-            # ---------------------------------------------------------------
-            step_start = time.time()
-            async with httpx.AsyncClient(timeout=120.0) as http_client:
-                embed_results = await _embed_chunks(chunks, http_client)
-            embedding_time = time.time() - step_start
-
-            logger.info("Embedding complete", extra={
-                "chunk_count": len(chunks),
-                "time_s": round(embedding_time, 2),
-            })
-
-            # ---------------------------------------------------------------
-            # STEP 7: Prepare and upsert points to Qdrant
-            # ---------------------------------------------------------------
-            step_start = time.time()
-            points = []
-            for chunk, embed_result in zip(chunks, embed_results):
-                payload = build_chunk_payload(chunk, document_id, filename)
-                points.append({
-                    # UUID for each point — prevents duplicate upserts on retry
-                    "point_id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{document_id}:{chunk.chunk_index}")),
-                    "dense_vector": embed_result["dense"]["values"],
-                    "sparse_indices": embed_result["sparse"]["indices"],
-                    "sparse_values": embed_result["sparse"]["values"],
-                    "payload": payload,
-                })
-
-            upserted = upsert_chunks(qdrant_client, points)
-            upsert_time = time.time() - step_start
-
-            logger.info("Qdrant upsert complete", extra={
-                "upserted": upserted,
-                "time_s": round(upsert_time, 2),
-            })
-
-            # ---------------------------------------------------------------
-            # STEP 8: Update document record to 'ready'
-            # ---------------------------------------------------------------
-            total_time = time.time() - task_start
-            await update_document_status(
-                db_pool, document_id, "ready",
-                markdown_path=markdown_path,
-                page_count=page_count,
-                chunk_count=len(chunks),
-            )
-            await update_ingestion_job(
-                db_pool, self.request.id, "completed",
-                completed_at=datetime.utcnow(),
-                processing_time_seconds=round(total_time, 2),
-            )
-
-            await write_audit_log(
-                db_pool, "ingestion_complete",
-                role=None, username=None, ip_address=None,
-                details={
-                    "document_id": document_id,
-                    "filename": filename,
-                    "chunk_count": len(chunks),
-                    "processing_time_s": round(total_time, 2),
-                },
-            )
-
-            result = {
-                "status": "completed",
-                "document_id": document_id,
-                "chunks": len(chunks),
-                "pages": page_count,
-                "time_s": round(total_time, 2),
-            }
-            logger.info("Document processing complete", extra=result)
-            return result
-
-        except Exception as exc:
-            # Record failure in both PostgreSQL tables
-            error_msg = str(exc)
-            logger.error("Document processing failed", extra={
-                "document_id": document_id,
-                "error": error_msg,
-            })
-
-            from app.db import update_document_status, update_ingestion_job, write_audit_log
-            await update_document_status(
-                db_pool, document_id, "failed", error_message=error_msg
-            )
-            await update_ingestion_job(
-                db_pool, self.request.id, "failed",
-                completed_at=datetime.utcnow(),
-                error_message=error_msg,
-                processing_time_seconds=round(time.time() - task_start, 2),
-            )
-            await write_audit_log(
-                db_pool, "ingestion_failed",
-                role=None, username=None, ip_address=None,
-                details={"document_id": document_id, "error": error_msg},
-            )
-            raise
-
-        finally:
-            await db_pool.close()
-
-    # Run the async pipeline in the event loop
     try:
-        return loop.run_until_complete(_run_pipeline())
+        return loop.run_until_complete(process_document_async(document_id, self.request.id))
     except Exception as exc:
         # Retry on transient errors (network issues, service restarts)
         if self.request.retries < self.max_retries:
@@ -377,6 +400,7 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
                 role=None, username=None, ip_address=None,
                 details={"document_id": document_id, "filename": filename},
             )
+            await _invalidate_semantic_cache()
 
             logger.info("Document deleted successfully", extra={"document_id": document_id})
             return {

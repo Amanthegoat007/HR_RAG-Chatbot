@@ -32,6 +32,7 @@ async def stream_rag_pipeline(
     collected_tokens: list[str] = []
     latest_sources: list[dict] = []
     current_event: str | None = None
+    done_meta: dict | None = None
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -76,7 +77,7 @@ async def stream_rag_pipeline(
                             yield f"data: {json.dumps({'type': 'error', 'content': data['error']})}\n\n"
 
                         elif current_event == "done" and data.get("status") == "complete":
-                            pass  # Will send done below
+                            done_meta = data.get("meta") or None
 
     except httpx.HTTPStatusError as exc:
         logger.error("RAG pipeline returned error", exc_info=True, extra={"status": exc.response.status_code})
@@ -88,7 +89,7 @@ async def stream_rag_pipeline(
 
     # Yield the collected text as a special internal event
     full_text = normalize_markdown_answer("".join(collected_tokens), latest_sources)
-    yield f"data: {json.dumps({'type': 'done', 'fullText': full_text})}\n\n"
+    yield f"data: {json.dumps({'type': 'done', 'fullText': full_text, 'meta': done_meta})}\n\n"
 
 
 # Keep legacy non-streaming version for backward compatibility

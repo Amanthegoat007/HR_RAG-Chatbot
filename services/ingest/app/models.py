@@ -27,7 +27,7 @@ class DocumentMetadata(BaseModel):
     id: str
     filename: str
     original_format: str
-    status: str          # pending | processing | ready | failed
+    status: str          # queued | pending | normalizing | processing | embedding | ready | failed | needs_review
     file_size_bytes: int
     page_count: int | None
     chunk_count: int

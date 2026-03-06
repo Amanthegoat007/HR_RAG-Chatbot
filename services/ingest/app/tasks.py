@@ -34,14 +34,15 @@ from typing import Any
 
 import asyncpg
 import httpx
+import redis.asyncio as aioredis
 
 from app.celery_app import celery_app
 from app.config import settings
-from app.file_converter import convert_to_markdown
-from app.chunker import chunk_markdown, DocumentChunk
+from app.chunker import chunk_normalized_document, DocumentChunk
+from app.document_normalizer import normalize_document, normalized_document_to_json, parse_report_to_json
 from app.metadata_extractor import build_document_metadata, build_chunk_payload
 from app.minio_client import (
-    get_minio_client, download_file, upload_markdown, delete_document_files
+    get_minio_client, download_file, upload_markdown, upload_text_artifact, delete_document_files
 )
 from app.qdrant_client_wrapper import (
     get_qdrant_client, upsert_chunks, delete_document_vectors
@@ -104,6 +105,47 @@ async def _embed_chunks(
     return all_results
 
 
+async def _invalidate_semantic_cache() -> None:
+    redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
+    try:
+        cursor = 0
+        while True:
+            cursor, keys = await redis_client.scan(
+                cursor=cursor,
+                match="semantic_cache:*",
+                count=100,
+            )
+            if keys:
+                await redis_client.delete(*keys)
+            if cursor == 0:
+                break
+    finally:
+        await redis_client.close()
+
+
+def _render_normalized_markdown(normalized_document) -> str:
+    frontmatter = [
+        "---",
+        f"filename: {normalized_document.source_filename}",
+        f"format: {normalized_document.source_format}",
+        f"upload_date: {datetime.utcnow().strftime('%Y-%m-%d')}",
+        f"page_count: {normalized_document.page_count}",
+        "---",
+    ]
+    chunks: list[str] = []
+    current_page = 1
+    for block in normalized_document.blocks:
+        page_start = max(1, getattr(block, "page_start", 1))
+        if page_start > current_page:
+            for next_page in range(current_page + 1, page_start + 1):
+                chunks.append(f"<!-- PAGE_BREAK: page_{next_page} -->")
+            current_page = page_start
+        content = (getattr(block, "markdown", "") or getattr(block, "text", "") or "").strip()
+        if content:
+            chunks.append(content)
+    return "\n\n".join(frontmatter + chunks).strip()
+
+
 @celery_app.task(
     name="app.tasks.process_document",
     bind=True,
@@ -163,8 +205,8 @@ def process_document(self, document_id: str) -> dict[str, Any]:
             filename = doc["filename"]
             minio_path = doc["minio_path"]
 
-            # Mark as processing
-            await update_document_status(db_pool, document_id, "processing")
+            # Mark as normalizing
+            await update_document_status(db_pool, document_id, "normalizing")
             await update_ingestion_job(
                 db_pool, self.request.id, "processing",
                 started_at=datetime.utcnow(),
@@ -177,31 +219,113 @@ def process_document(self, document_id: str) -> dict[str, Any]:
             file_bytes = download_file(minio_client, minio_path)
 
             # ---------------------------------------------------------------
-            # STEP 3: Convert to Markdown (★ signature optimization)
+            # STEP 3: Normalize document with parser routing + quality scoring
             # ---------------------------------------------------------------
             step_start = time.time()
-            logger.info("Converting document to Markdown", extra={"doc_filename": filename})
-            markdown_text, page_count = convert_to_markdown(file_bytes, filename)
-            conversion_time = time.time() - step_start
+            logger.info("Normalizing document", extra={"doc_filename": filename})
+            normalized_document = normalize_document(file_bytes, filename, document_id)
+            normalization_time = time.time() - step_start
 
-            logger.info("Markdown conversion complete", extra={
+            logger.info("Normalization complete", extra={
                 "doc_filename": filename,
-                "pages": page_count,
-                "markdown_chars": len(markdown_text),
-                "time_s": round(conversion_time, 2),
+                "pages": normalized_document.page_count,
+                "quality_score": normalized_document.quality_score,
+                "parser_used": normalized_document.parser_used,
+                "time_s": round(normalization_time, 2),
             })
 
             # ---------------------------------------------------------------
-            # STEP 4: Upload Markdown to MinIO (for audit/debug)
+            # STEP 4: Upload normalized artifacts to MinIO
             # ---------------------------------------------------------------
-            markdown_path = upload_markdown(minio_client, document_id, markdown_text)
+            normalized_markdown = _render_normalized_markdown(normalized_document)
+            markdown_path = upload_markdown(minio_client, document_id, normalized_markdown)
+
+            normalized_json_path = f"originals/{document_id}/normalized.json"
+            parse_report_path = f"originals/{document_id}/parse_report.json"
+            normalized_document.artifacts.original_path = minio_path
+            normalized_document.artifacts.normalized_markdown_path = markdown_path
+            normalized_document.artifacts.normalized_json_path = normalized_json_path
+            normalized_document.artifacts.parse_report_path = parse_report_path
+
+            upload_text_artifact(
+                minio_client,
+                document_id,
+                "parse_report.json",
+                parse_report_to_json(normalized_document.parse_report),
+                "application/json; charset=utf-8",
+                "parse_report",
+            )
+            upload_text_artifact(
+                minio_client,
+                document_id,
+                "normalized.json",
+                normalized_document_to_json(normalized_document),
+                "application/json; charset=utf-8",
+                "normalized_document",
+            )
 
             # ---------------------------------------------------------------
-            # STEP 5: Chunk the Markdown
+            # STEP 5: Build metadata and enforce quality gate
+            # ---------------------------------------------------------------
+            document_metadata = build_document_metadata(
+                markdown_text=normalized_markdown,
+                filename=filename,
+                file_size_bytes=doc["file_size_bytes"],
+                chunk_count=0,
+                normalized_document=normalized_document,
+                parse_report=normalized_document.parse_report.model_dump(),
+                artifacts=normalized_document.artifacts.model_dump(),
+            )
+
+            if normalized_document.quality_score < settings.parse_quality_needs_review_threshold:
+                delete_document_vectors(qdrant_client, document_id)
+                await update_document_status(
+                    db_pool,
+                    document_id,
+                    "needs_review",
+                    markdown_path=markdown_path,
+                    page_count=normalized_document.page_count,
+                    chunk_count=0,
+                    metadata=document_metadata,
+                    error_message="Low parse quality - quarantined for manual review",
+                )
+                await update_ingestion_job(
+                    db_pool,
+                    self.request.id,
+                    "completed",
+                    completed_at=datetime.utcnow(),
+                    processing_time_seconds=round(time.time() - task_start, 2),
+                )
+                await write_audit_log(
+                    db_pool,
+                    "ingestion_failed",
+                    role=None,
+                    username=None,
+                    ip_address=None,
+                    details={
+                        "document_id": document_id,
+                        "filename": filename,
+                        "reason": "needs_review",
+                        "quality_score": normalized_document.quality_score,
+                        "quality_flags": normalized_document.quality_flags,
+                    },
+                )
+                await _invalidate_semantic_cache()
+                return {
+                    "status": "needs_review",
+                    "document_id": document_id,
+                    "chunks": 0,
+                    "pages": normalized_document.page_count,
+                    "quality_score": normalized_document.quality_score,
+                    "time_s": round(time.time() - task_start, 2),
+                }
+
+            # ---------------------------------------------------------------
+            # STEP 6: Chunk normalized blocks (structure-aware)
             # ---------------------------------------------------------------
             step_start = time.time()
-            chunks = chunk_markdown(
-                markdown_text,
+            chunks = chunk_normalized_document(
+                normalized_document,
                 chunk_size=settings.chunk_size_tokens,
                 overlap=settings.chunk_overlap_tokens,
             )
@@ -216,8 +340,9 @@ def process_document(self, document_id: str) -> dict[str, Any]:
                 raise ValueError("No chunks generated — document may be empty or unreadable")
 
             # ---------------------------------------------------------------
-            # STEP 6: Embed all chunks via embedding-svc
+            # STEP 7: Embed all chunks via embedding-svc
             # ---------------------------------------------------------------
+            await update_document_status(db_pool, document_id, "embedding")
             step_start = time.time()
             async with httpx.AsyncClient(timeout=120.0) as http_client:
                 embed_results = await _embed_chunks(chunks, http_client)
@@ -229,9 +354,10 @@ def process_document(self, document_id: str) -> dict[str, Any]:
             })
 
             # ---------------------------------------------------------------
-            # STEP 7: Prepare and upsert points to Qdrant
+            # STEP 8: Prepare and upsert points to Qdrant
             # ---------------------------------------------------------------
             step_start = time.time()
+            delete_document_vectors(qdrant_client, document_id)
             points = []
             for chunk, embed_result in zip(chunks, embed_results):
                 payload = build_chunk_payload(chunk, document_id, filename)
@@ -253,14 +379,16 @@ def process_document(self, document_id: str) -> dict[str, Any]:
             })
 
             # ---------------------------------------------------------------
-            # STEP 8: Update document record to 'ready'
+            # STEP 9: Update document record to 'ready'
             # ---------------------------------------------------------------
             total_time = time.time() - task_start
+            document_metadata["chunk_count"] = len(chunks)
             await update_document_status(
                 db_pool, document_id, "ready",
                 markdown_path=markdown_path,
-                page_count=page_count,
+                page_count=normalized_document.page_count,
                 chunk_count=len(chunks),
+                metadata=document_metadata,
             )
             await update_ingestion_job(
                 db_pool, self.request.id, "completed",
@@ -275,15 +403,19 @@ def process_document(self, document_id: str) -> dict[str, Any]:
                     "document_id": document_id,
                     "filename": filename,
                     "chunk_count": len(chunks),
+                    "quality_score": normalized_document.quality_score,
+                    "parser_used": normalized_document.parser_used,
                     "processing_time_s": round(total_time, 2),
                 },
             )
+            await _invalidate_semantic_cache()
 
             result = {
                 "status": "completed",
                 "document_id": document_id,
                 "chunks": len(chunks),
-                "pages": page_count,
+                "pages": normalized_document.page_count,
+                "quality_score": normalized_document.quality_score,
                 "time_s": round(total_time, 2),
             }
             logger.info("Document processing complete", extra=result)
@@ -377,6 +509,7 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
                 role=None, username=None, ip_address=None,
                 details={"document_id": document_id, "filename": filename},
             )
+            await _invalidate_semantic_cache()
 
             logger.info("Document deleted successfully", extra={"document_id": document_id})
             return {

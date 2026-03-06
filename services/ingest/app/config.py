@@ -38,13 +38,22 @@ class IngestSettings(BaseSettings):
     embedding_dense_dim: int = 1024
 
     # Embedding service
-    embedding_svc_url: str = "http://embedding-svc:8004"
+    embedding_svc_url: str = "http://rag-pipeline:8002"
+
+    # Internal service auth (backend -> ingest internal routes)
+    ingest_internal_token: str = "change-me-ingest-token"
 
     # Document processing
     max_upload_size_mb: int = 200
     chunk_size_tokens: int = 256
     chunk_overlap_tokens: int = 64
     tesseract_lang: str = "eng+ara"
+    parse_quality_ready_threshold: float = 0.80
+    parse_quality_retry_threshold: float = 0.60
+    parse_quality_needs_review_threshold: float = 0.60
+    enable_docling_parser: bool = True
+    enable_unstructured_fallback: bool = True
+    unstructured_pdf_strategy: str = "fast"
 
     # Service
     host: str = "0.0.0.0"

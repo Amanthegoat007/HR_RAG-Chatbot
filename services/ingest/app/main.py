@@ -24,7 +24,7 @@ from typing import AsyncGenerator, Optional
 
 import asyncpg
 from fastapi import (
-    Depends, FastAPI, File, Form, HTTPException, Request,
+    Depends, FastAPI, File, Header, HTTPException, Request,
     UploadFile, status
 )
 from fastapi.responses import JSONResponse
@@ -106,6 +106,13 @@ async def require_admin(token_data: TokenData = Depends(require_jwt_local)) -> T
     if token_data.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
     return token_data
+
+
+def require_internal_token(x_ingest_token: str = Header(default="", alias="X-Ingest-Token")) -> None:
+    if not settings.ingest_internal_token:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal ingest token is not configured")
+    if x_ingest_token != settings.ingest_internal_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid internal ingest token")
 
 
 @asynccontextmanager
@@ -261,6 +268,67 @@ async def upload_document(
         status="pending",
         job_id=task.id,
         message="Document queued for processing. Poll GET /ingest/document/{id} for status.",
+    )
+
+
+@app.post(
+    "/ingest/internal/enqueue/{document_id}",
+    summary="Queue processing for an existing document record",
+)
+async def internal_enqueue_document(
+    document_id: str,
+    request: Request,
+    _: None = Depends(require_internal_token),
+) -> JSONResponse:
+    db_pool: asyncpg.Pool = request.app.state.db_pool
+    doc = await get_document(db_pool, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
+
+    task = process_document.apply_async(
+        args=[document_id],
+        queue="document_processing",
+        task_id=str(uuid.uuid4()),
+    )
+    job_id = await create_ingestion_job(db_pool, document_id, task.id)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "status": "queued",
+            "document_id": document_id,
+            "task_id": task.id,
+            "job_id": job_id,
+        },
+    )
+
+
+@app.post(
+    "/ingest/internal/delete/{document_id}",
+    summary="Queue document deletion from backend",
+)
+async def internal_delete_document(
+    document_id: str,
+    request: Request,
+    _: None = Depends(require_internal_token),
+) -> JSONResponse:
+    db_pool: asyncpg.Pool = request.app.state.db_pool
+    doc = await get_document(db_pool, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
+
+    filename = doc["filename"]
+    delete_document_task.apply_async(
+        args=[document_id, filename],
+        queue="document_processing",
+        task_id=str(uuid.uuid4()),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "status": "queued",
+            "document_id": document_id,
+            "filename": filename,
+        },
     )
 
 

@@ -12,7 +12,8 @@
 -- ===========================================================================
 -- TABLE: documents
 -- Tracks every document uploaded to the system.
--- One row per file upload. Status progresses: pending → processing → ready | failed
+-- One row per file upload. Status progresses:
+-- queued/pending -> normalizing/processing/embedding -> ready | failed | needs_review
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS documents (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS documents (
     page_count          INTEGER,       -- extracted during markdown conversion
     chunk_count         INTEGER DEFAULT 0,  -- updated after Qdrant upsert completes
     status              VARCHAR(20) DEFAULT 'pending'
-                            CHECK (status IN ('pending', 'processing', 'ready', 'failed')),
+                            CHECK (status IN ('queued', 'pending', 'normalizing', 'processing', 'embedding', 'ready', 'failed', 'needs_review')),
     uploaded_by         VARCHAR(50) DEFAULT 'hr_admin',
     uploaded_at         TIMESTAMPTZ DEFAULT NOW(),
     processed_at        TIMESTAMPTZ,   -- set when status becomes 'ready' or 'failed'

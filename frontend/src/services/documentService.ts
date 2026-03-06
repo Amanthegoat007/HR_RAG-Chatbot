@@ -1,4 +1,5 @@
 import { axiosClient } from "./axiosClient";
+import axios from "axios";
 
 export interface DocumentInfo {
   id: string;
@@ -37,7 +38,15 @@ export const documentService = {
    * Delete a document
    */
   async deleteDocument(documentId: string): Promise<void> {
-    await axiosClient.delete(`/api/documents/${documentId}`);
+    try {
+      await axiosClient.delete(`/api/documents/${documentId}`);
+    } catch (error) {
+      // Treat "already gone" as success for idempotent UX.
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return;
+      }
+      throw error;
+    }
   },
 
   /**

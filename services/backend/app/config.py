@@ -53,6 +53,8 @@ class BackendSettings(BaseSettings):
     # Internal Service URLs
     rag_pipeline_url: str = "http://rag-pipeline:8002"
     embedding_svc_url: str = "http://rag-pipeline:8002"
+    document_ingest_url: str = "http://document-ingest-api:8003"
+    ingest_internal_token: str = "change-me-ingest-token"
 
     # Document processing parameters
     max_upload_size_mb: int = 200

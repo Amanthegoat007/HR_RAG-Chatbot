@@ -53,6 +53,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-hr-documents}
       RAG_PIPELINE_URL: ${RAG_PIPELINE_URL:-http://rag-pipeline:8002}
+      DOCUMENT_INGEST_URL: ${DOCUMENT_INGEST_URL:-http://document-ingest-api:8003}
+      INGEST_INTERNAL_TOKEN: ${INGEST_INTERNAL_TOKEN}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-hr_admin}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
@@ -80,7 +82,106 @@ services:
           memory: 4G
 
   # ==========================================================================
-  # 3. RAG PIPELINE — Query Orchestrator + Embedding + Reranker + llama.cpp
+  # 3. DOCUMENT INGEST API — Canonical normalization + queue dispatch
+  # ==========================================================================
+  document-ingest-api:
+    image: hr-rag-chatbot-document-ingest:latest
+    build:
+      context: .
+      dockerfile: services/ingest/Dockerfile
+    container_name: document-ingest-api
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_DSN: ${POSTGRES_DSN}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      MINIO_ENDPOINT_URL: ${MINIO_ENDPOINT_URL:-http://minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-hr-documents}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-hr_documents}
+      EMBEDDING_SVC_URL: ${EMBEDDING_SVC_URL:-http://rag-pipeline:8002}
+      INGEST_INTERNAL_TOKEN: ${INGEST_INTERNAL_TOKEN}
+      UNSTRUCTURED_PDF_STRATEGY: ${UNSTRUCTURED_PDF_STRATEGY:-fast}
+      PYTHONPATH: /app
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8003 --workers 1 --log-level info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      rag-pipeline:
+        condition: service_started
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  # ==========================================================================
+  # 4. DOCUMENT INGEST WORKER — Celery worker for normalization/indexing
+  # ==========================================================================
+  document-ingest-worker:
+    image: hr-rag-chatbot-document-ingest:latest
+    container_name: document-ingest-worker
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_DSN: ${POSTGRES_DSN}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      MINIO_ENDPOINT_URL: ${MINIO_ENDPOINT_URL:-http://minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-hr-documents}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-hr_documents}
+      EMBEDDING_SVC_URL: ${EMBEDDING_SVC_URL:-http://rag-pipeline:8002}
+      INGEST_INTERNAL_TOKEN: ${INGEST_INTERNAL_TOKEN}
+      UNSTRUCTURED_PDF_STRATEGY: ${UNSTRUCTURED_PDF_STRATEGY:-fast}
+      PYTHONPATH: /app
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    command: >
+      celery -A app.celery_app worker --concurrency=2 --loglevel=INFO --queues=document_processing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      rag-pipeline:
+        condition: service_started
+    networks:
+      - hr-network
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # ==========================================================================
+  # 5. RAG PIPELINE — Query Orchestrator + Embedding + Reranker + llama.cpp
   # ==========================================================================
   rag-pipeline:
     build:
@@ -109,6 +210,9 @@ services:
       PROMPT_MAX_CHUNKS: ${PROMPT_MAX_CHUNKS:-2}
       PROMPT_MAX_CHUNK_CHARS: ${PROMPT_MAX_CHUNK_CHARS:-450}
       PROMPT_MAX_CHUNK_SENTENCES: ${PROMPT_MAX_CHUNK_SENTENCES:-4}
+      DETERMINISTIC_ANSWERS_ENABLED: ${DETERMINISTIC_ANSWERS_ENABLED:-false}
+      DETERMINISTIC_CALC_ENABLED: ${DETERMINISTIC_CALC_ENABLED:-false}
+      DETERMINISTIC_LIST_ENABLED: ${DETERMINISTIC_LIST_ENABLED:-false}
       HF_HUB_DISABLE_XET: ${HF_HUB_DISABLE_XET:-1}
       HF_HUB_ENABLE_HF_TRANSFER: ${HF_HUB_ENABLE_HF_TRANSFER:-1}
       MODEL_PREFETCH_ON_STARTUP: ${MODEL_PREFETCH_ON_STARTUP:-true}
@@ -137,7 +241,7 @@ services:
           memory: 14G # Large memory needed for LLM + Embedding + Reranker in-process
 
   # ==========================================================================
-  # 4. MONITORING — Prometheus + Grafana (Using Supervisor)
+  # 6. MONITORING — Prometheus + Grafana (Using Supervisor)
   # ==========================================================================
   monitoring:
     build:
@@ -156,7 +260,7 @@ services:
           memory: 512M
 
   # ==========================================================================
-  # 5. POSTGRESQL — Conversations, Messages, Documents, Audit
+  # 7. POSTGRESQL — Conversations, Messages, Documents, Audit
   # ==========================================================================
   postgres:
     image: postgres:16-alpine
@@ -178,7 +282,7 @@ services:
       retries: 5
 
   # ==========================================================================
-  # 6. REDIS (Valkey) — Semantic cache + Celery broker
+  # 8. REDIS (Valkey) — Semantic cache + Celery broker
   # ==========================================================================
   redis:
     image: valkey/valkey:7.2-alpine
@@ -197,7 +301,7 @@ services:
       retries: 5
 
   # ==========================================================================
-  # 7. QDRANT — Vector database
+  # 9. QDRANT — Vector database
   # ==========================================================================
   qdrant:
     image: qdrant/qdrant:v1.9.0
@@ -212,7 +316,7 @@ services:
     restart: unless-stopped
 
   # ==========================================================================
-  # 8. MINIO — Document Store (S3 compatible)
+  # 10. MINIO — Document Store (S3 compatible)
   # ==========================================================================
   minio:
     image: minio/minio:RELEASE.2024-01-16T16-07-38Z

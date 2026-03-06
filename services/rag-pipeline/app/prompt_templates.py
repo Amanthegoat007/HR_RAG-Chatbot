@@ -1,28 +1,18 @@
 """
 ============================================================================
-FILE: services/query/app/prompt_templates.py
-PURPOSE: System prompt and context templates for the Mistral-7B LLM.
-         Designed for factual, cited, bilingual HR knowledge responses.
+FILE: services/rag-pipeline/app/prompt_templates.py
+PURPOSE: System prompt and context templates for grounded HR responses.
 ARCHITECTURE REF: §8 — Prompt Template
 ============================================================================
 """
 
 import re
+from typing import Any
 
+from app.answer_planner import AnswerPlan
 from app.config import settings
 
-# ---------------------------------------------------------------------------
-# SYSTEM PROMPT (English-only, quality-focused, markdown-formatted)
-# ---------------------------------------------------------------------------
-# Design rationale:
-# - "ONLY based on provided context" prevents hallucination of HR policies
-# - Inline citation format "(Source: filename, Page X)" is parsed by frontend
-#   and rendered as styled citation chips
-# - Markdown formatting rules ensure beautiful rendering in chat UI
-# - Conservative temperature (0.1) set in config ensures deterministic answers
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = """You are an HR Knowledge Assistant. Use ONLY the provided context.
+SYSTEM_PROMPT = """You are an HR Knowledge Assistant. Use ONLY the provided context and verified evidence.
 
 Return output in this markdown schema:
 ### Answer
@@ -37,27 +27,24 @@ Return output in this markdown schema:
 Rules:
 1. Return valid markdown only.
 2. Keep it concise and factual.
-3. Use a numbered list only when multiple points are needed.
-4. Use bold only for key values and policy names.
-5. Never invent facts outside context.
-6. If missing, return exactly:
+3. Use VERIFIED_EVIDENCE first. If it contains steps or a final answer, do not contradict it.
+4. Never omit values or list items that appear in VERIFIED_EVIDENCE.
+5. Use a numbered list only when multiple points are needed.
+6. Use bold only for key values and policy names.
+7. Never invent facts outside context.
+8. If missing, return exactly:
    "This information is not available in the current HR knowledge base."
-7. End with exactly one citation line and then <END_ANSWER>.
+9. End with exactly one citation line and then <END_ANSWER>.
+
+VERIFIED_EVIDENCE:
+{verified_evidence}
 
 Context:
 {context}
 """
 
-# ---------------------------------------------------------------------------
-# CONTEXT TEMPLATE
-# ---------------------------------------------------------------------------
-# Each retrieved chunk is formatted with this template before being included
-# in the system prompt. The source attribution enables verifiable citations.
-# ---------------------------------------------------------------------------
-
 CONTEXT_TEMPLATE = """[Source: {filename} | Section: {section} | Page: {page_number}]
 {chunk_text}"""
-
 
 _STOPWORDS = {
     "a", "an", "the", "is", "are", "to", "in", "of", "for", "and", "or",
@@ -68,19 +55,16 @@ _STOPWORDS = {
 
 def _extract_query_terms(query: str) -> set[str]:
     words = re.findall(r"[a-zA-Z0-9$%]+", (query or "").lower())
-    return {w for w in words if len(w) > 2 and w not in _STOPWORDS}
+    return {word for word in words if len(word) > 2 and word not in _STOPWORDS}
 
 
 def _truncate_chunk_text(text: str, query_terms: set[str]) -> str:
-    """
-    Keep prompt context compact for faster first-token latency.
-    """
     if not text:
         return ""
 
     cleaned = " ".join(text.split())
     sentences = re.split(r"(?<=[.!?])\s+", cleaned)
-    sentences = [s.strip() for s in sentences if s.strip()]
+    sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
 
     if not sentences:
         return ""
@@ -91,51 +75,29 @@ def _truncate_chunk_text(text: str, query_terms: set[str]) -> str:
         selected = sentences[:max_sentences]
     else:
         scored: list[tuple[int, int, str]] = []
-        for i, sentence in enumerate(sentences):
+        for idx, sentence in enumerate(sentences):
             lowered = sentence.lower()
             score = sum(1 for term in query_terms if term in lowered)
-            scored.append((score, i, sentence))
+            scored.append((score, idx, sentence))
 
         scored.sort(key=lambda row: (row[0], -row[1]), reverse=True)
         top = sorted(scored[:max_sentences], key=lambda row: row[1])
         selected = [row[2] for row in top]
 
-    compact = " ".join(selected).strip()
-    if not compact:
-        compact = cleaned
-
+    compact = " ".join(selected).strip() or cleaned
     limit = max(180, min(settings.prompt_max_chunk_chars, 450))
     if len(compact) <= limit:
         return compact
     return compact[:limit].rstrip() + " ..."
 
 
-
-def build_context_string(retrieved_chunks: list[dict], question: str) -> str:
-    """
-    Build the context string from a list of retrieved and reranked chunks.
-
-    Each chunk is formatted using CONTEXT_TEMPLATE, then joined.
-    This becomes the {context} placeholder in SYSTEM_PROMPT.
-
-    Args:
-        retrieved_chunks: List of dicts from Qdrant search + reranker, each containing:
-            - filename: str
-            - section: str
-            - page_number: int
-            - text: str
-
-    Returns:
-        Formatted context string for injection into SYSTEM_PROMPT.
-    """
+def build_context_string(retrieved_chunks: list[dict[str, Any]], question: str) -> str:
     if not retrieved_chunks:
         return "No relevant documents found in the knowledge base."
 
     query_terms = _extract_query_terms(question)
-
-    parts = []
-    max_chunks = max(1, min(settings.prompt_max_chunks, 2))
-    for chunk in retrieved_chunks[:max_chunks]:
+    parts: list[str] = []
+    for chunk in retrieved_chunks:
         parts.append(CONTEXT_TEMPLATE.format(
             filename=chunk.get("filename", "Unknown"),
             section=chunk.get("section", "Unknown Section"),
@@ -146,38 +108,45 @@ def build_context_string(retrieved_chunks: list[dict], question: str) -> str:
     return "\n".join(parts)
 
 
-def build_prompt(question: str, retrieved_chunks: list[dict]) -> str:
-    """
-    Build the complete prompt by injecting context into the system prompt.
-
-    This is the final prompt sent to the Mistral-7B LLM.
-
-    Args:
-        question: The user's question.
-        retrieved_chunks: Top-5 reranked chunks from the RAG pipeline.
-
-    Returns:
-        Complete prompt string for the LLM API.
-    """
+def build_prompt(
+    question: str,
+    retrieved_chunks: list[dict[str, Any]],
+    answer_plan: AnswerPlan | None = None,
+) -> str:
     context = build_context_string(retrieved_chunks, question)
-    return SYSTEM_PROMPT.format(context=context)
+    verified_evidence = _build_verified_evidence(answer_plan)
+    return SYSTEM_PROMPT.format(
+        context=context,
+        verified_evidence=verified_evidence,
+    )
 
 
-def format_as_mistral_chat(system_prompt: str, question: str) -> list[dict]:
-    """
-    Format the prompt as a chat message list for llama.cpp OpenAI-compatible API.
-
-    Mistral uses the standard OpenAI chat format:
-        [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
-
-    Args:
-        system_prompt: The full system prompt with context injected.
-        question: The user's question.
-
-    Returns:
-        Messages list for the /v1/chat/completions API.
-    """
+def format_as_mistral_chat(system_prompt: str, question: str) -> list[dict[str, str]]:
     return [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": question},
     ]
+
+
+def _build_verified_evidence(answer_plan: AnswerPlan | None) -> str:
+    if not answer_plan:
+        return "None."
+
+    lines = [f"Question type: {answer_plan.question_type}"]
+    if answer_plan.facts:
+        lines.append("Facts:")
+        lines.extend(f"- {fact}" for fact in answer_plan.facts[:8])
+    if answer_plan.steps:
+        lines.append("Steps:")
+        lines.extend(f"- {step}" for step in answer_plan.steps[:6])
+    if answer_plan.final_answer:
+        lines.append(f"Allowed final answer: {answer_plan.final_answer}")
+    if answer_plan.citation_chunks:
+        primary = answer_plan.citation_chunks[0]
+        lines.append(
+            "Use citation: "
+            f"(Source: {primary.get('filename', 'Unknown')} | "
+            f"Section: {primary.get('section', 'Unknown Section') or 'Unknown Section'} | "
+            f"Page: {primary.get('page_number', primary.get('page_start', '?'))})"
+        )
+    return "\n".join(lines)

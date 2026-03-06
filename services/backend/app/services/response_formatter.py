@@ -56,6 +56,8 @@ def _normalize_lists(text: str) -> str:
     text = re.sub(r"([.!?])\s+(\d+\.\s+)", r"\1\n\n\2", text)
     text = re.sub(r"\s+(\d+\.\s+)\*\*", r"\n\1**", text)
     text = re.sub(r"(\d+\.)\s+—\s+", r"\1 ", text)
+    text = re.sub(r"([^\n])\s+(-\s+\*\*)", r"\1\n\2", text)
+    text = re.sub(r"([^\n])\s+(-\s+)", r"\1\n\2", text)
     return text
 
 

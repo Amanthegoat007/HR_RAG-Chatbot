@@ -98,12 +98,13 @@ async def update_document_status(
     Args:
         pool: asyncpg connection pool.
         document_id: UUID of the document.
-        status: New status (pending/processing/ready/failed).
+        status: New status (pending/normalizing/processing/embedding/ready/failed/needs_review).
         **kwargs: Optional fields to update:
             - markdown_path: MinIO path to markdown file
             - page_count: Number of pages extracted
             - chunk_count: Number of chunks created
             - error_message: Error description (for failed status)
+            - metadata: JSON-serializable metadata payload
             - processed_at: Completion timestamp
     """
     # Build dynamic SET clause based on provided kwargs
@@ -116,17 +117,21 @@ async def update_document_status(
         "page_count": "page_count",
         "chunk_count": "chunk_count",
         "error_message": "error_message",
+        "metadata": "metadata",
         "processed_at": "processed_at",
     }
 
     for kwarg_key, db_col in field_map.items():
         if kwarg_key in kwargs:
             set_parts.append(f"{db_col} = ${param_idx}")
-            params.append(kwargs[kwarg_key])
+            if kwarg_key == "metadata":
+                params.append(json.dumps(kwargs[kwarg_key]))
+            else:
+                params.append(kwargs[kwarg_key])
             param_idx += 1
 
     # Auto-set processed_at when reaching terminal states
-    if status in ("ready", "failed") and "processed_at" not in kwargs:
+    if status in ("ready", "failed", "needs_review") and "processed_at" not in kwargs:
         set_parts.append(f"processed_at = ${param_idx}")
         params.append(datetime.utcnow())
         param_idx += 1

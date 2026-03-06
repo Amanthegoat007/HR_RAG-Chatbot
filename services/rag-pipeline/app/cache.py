@@ -163,6 +163,7 @@ class SemanticCache:
                         best_entry = {
                             "answer": entry["answer"],
                             "sources": entry["sources"],
+                            "meta": entry.get("meta", {}),
                             "cache_key": key.decode() if isinstance(key, bytes) else key,
                             "similarity": similarity,
                         }
@@ -187,6 +188,7 @@ class SemanticCache:
         query_embedding: list[float],
         answer: str,
         sources: list[dict],
+        meta: dict[str, Any] | None = None,
     ) -> None:
         """
         Store a query-answer pair in the semantic cache.
@@ -211,6 +213,7 @@ class SemanticCache:
                 "query_embedding": normalized,
                 "answer": answer,
                 "sources": sources,
+                "meta": meta or {},
                 "timestamp": time.time(),
             }
 
@@ -231,4 +234,3 @@ class SemanticCache:
 
         except Exception as exc:
             logger.error("Cache store failed", extra={"error": str(exc)})
-

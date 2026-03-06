@@ -52,9 +52,21 @@ def make_sources_event(chunks: list[dict[str, Any]]) -> SSEEvent:
             "filename": chunk.get("filename", ""),
             "section": chunk.get("section", ""),
             "page_number": chunk.get("page_number", 1),
+            "page_start": chunk.get("page_start", chunk.get("page_number", 1)),
+            "page_end": chunk.get("page_end", chunk.get("page_number", 1)),
             "document_id": chunk.get("document_id", ""),
             "chunk_index": chunk.get("chunk_index", 0),
             "score": round(chunk.get("rerank_score", chunk.get("score", 0.0)), 4),
+            "source_format": chunk.get("source_format", ""),
+            "parser_used": chunk.get("parser_used", ""),
+            "chunk_type": chunk.get("chunk_type", "paragraph"),
+            "content_type": chunk.get("content_type", "paragraph"),
+            "quality_score": chunk.get("quality_score", 1.0),
+            "quality_flags": chunk.get("quality_flags", []),
+            "table_id": chunk.get("table_id"),
+            "row_index": chunk.get("row_index"),
+            "parent_chunk_id": chunk.get("parent_chunk_id"),
+            "evidence_tags": chunk.get("evidence_tags", []),
             "text": chunk.get("text", "")[:500],  # Include chunk text for expandable cards (cap at 500 chars)
         }
         if chunk.get("heading_path"):
@@ -74,16 +86,17 @@ def make_error_event(message: str, code: str = "pipeline_error") -> SSEEvent:
     )
 
 
-def make_done_event() -> SSEEvent:
-    return SSEEvent(
-        event="done",
-        data=json.dumps({"status": "complete"}),
-    )
+def make_done_event(meta: dict[str, Any] | None = None) -> SSEEvent:
+    payload: dict[str, Any] = {"status": "complete"}
+    if meta:
+        payload["meta"] = meta
+    return SSEEvent(event="done", data=json.dumps(payload, ensure_ascii=False))
 
 
 async def build_query_stream(
     token_generator: AsyncGenerator[str, None],
     source_chunks: list[dict[str, Any]],
+    done_meta: dict[str, Any] | None = None,
 ) -> AsyncGenerator[SSEEvent, None]:
     """
     Compose the full SSE event stream for a query response.
@@ -96,7 +109,7 @@ async def build_query_stream(
             token_count += 1
 
         yield make_sources_event(source_chunks)
-        yield make_done_event()
+        yield make_done_event(done_meta)
 
         logger.debug(
             "SSE stream complete",
@@ -112,4 +125,4 @@ async def build_query_stream(
             message="An error occurred while generating the response. Please try again.",
             code="llm_stream_error",
         )
-        yield make_done_event()
+        yield make_done_event(done_meta)
