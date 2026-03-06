@@ -54,7 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         reranker_service.load_model(reranker_model_path)
     except Exception as exc:
-        raise RuntimeError(f"Could not load reranker model: {exc}") from exc
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Could not load reranker model. Reranking will be disabled: {exc}")
 
     # Initialize Redis client for semantic cache
     redis_client = aioredis.from_url(

@@ -107,6 +107,12 @@ services:
       UNSTRUCTURED_PDF_STRATEGY: ${UNSTRUCTURED_PDF_STRATEGY:-fast}
       PYTHONPATH: /app
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      NLTK_DATA: /app/nltk_data
+      HF_HOME: /app/docling-models
+      HF_HUB_OFFLINE: 1
+    volumes:
+      - ./services/ingest/nltk_data:/app/nltk_data:ro
+      - ./services/ingest/docling-models:/app/docling-models:ro
     command: >
       uvicorn app.main:app --host 0.0.0.0 --port 8003 --workers 1 --log-level info
     depends_on:
@@ -157,6 +163,12 @@ services:
       UNSTRUCTURED_PDF_STRATEGY: ${UNSTRUCTURED_PDF_STRATEGY:-fast}
       PYTHONPATH: /app
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      NLTK_DATA: /app/nltk_data
+      HF_HOME: /app/docling-models
+      HF_HUB_OFFLINE: 1
+    volumes:
+      - ./services/ingest/nltk_data:/app/nltk_data:ro
+      - ./services/ingest/docling-models:/app/docling-models:ro
     command: >
       celery -A app.celery_app worker --concurrency=2 --loglevel=INFO --queues=document_processing
     depends_on:
@@ -195,8 +207,8 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CACHE_SIMILARITY_THRESHOLD: ${CACHE_SIMILARITY_THRESHOLD:-0.88}
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-86400}
-      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-BAAI/bge-m3}
-      RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-BAAI/bge-reranker-v2-m3}
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-/models/bge-m3}
+      RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-/models/bge-reranker-v2-m3}
       LLM_SERVER_URL: ${LLM_SERVER_URL:-http://localhost:8080}
       LLM_PROVIDER: ${LLM_PROVIDER:-local}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-256}
@@ -210,6 +222,7 @@ services:
       PROMPT_MAX_CHUNKS: ${PROMPT_MAX_CHUNKS:-2}
       PROMPT_MAX_CHUNK_CHARS: ${PROMPT_MAX_CHUNK_CHARS:-450}
       PROMPT_MAX_CHUNK_SENTENCES: ${PROMPT_MAX_CHUNK_SENTENCES:-4}
+      TOP_N_RERANK: ${TOP_N_RERANK:-10}
       DETERMINISTIC_ANSWERS_ENABLED: ${DETERMINISTIC_ANSWERS_ENABLED:-false}
       DETERMINISTIC_CALC_ENABLED: ${DETERMINISTIC_CALC_ENABLED:-false}
       DETERMINISTIC_LIST_ENABLED: ${DETERMINISTIC_LIST_ENABLED:-false}
@@ -218,9 +231,9 @@ services:
       MODEL_PREFETCH_ON_STARTUP: ${MODEL_PREFETCH_ON_STARTUP:-true}
       MODEL_DOWNLOAD_WORKERS: ${MODEL_DOWNLOAD_WORKERS:-16}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HF_HUB_OFFLINE: 1
     volumes:
       - ./services/llm/models:/models:ro
-      - hf_cache:/root/.cache/huggingface  # Persist HF models across restarts
     depends_on:
       qdrant:
         condition: service_started
