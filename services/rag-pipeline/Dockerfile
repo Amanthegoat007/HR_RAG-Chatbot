@@ -15,17 +15,22 @@ RUN apt-get update && apt-get install -y \
 # Use locally cloned llama.cpp
 WORKDIR /llama.cpp
 COPY llama.cpp/ .
-RUN cmake -B build -DLLAMA_NATIVE=ON \
+RUN cmake -B build \
+    -DLLAMA_NATIVE=ON \
+    -DGGML_AVX512=ON \
+    -DGGML_AVX512_VBMI=ON \
+    -DGGML_AVX512_VNNI=ON \
+    -DGGML_AVX512_BF16=ON \
     && cmake --build build --config Release -j$(nproc) --target llama-server
 
 # Install CPU-only PyTorch first (FlagEmbedding pulls torch, but we don't need CUDA — saves ~700MB)
 WORKDIR /app
-RUN pip install --default-timeout=300 --no-cache-dir --only-binary :all: \
+RUN pip install --default-timeout=30000 --no-cache-dir --only-binary :all: \
     torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Install Python dependencies (force pure binary wheels where possible to avoid 50m C++ build hangs)
 COPY requirements.txt .
-RUN pip install --default-timeout=300 --no-cache-dir --prefer-binary -r requirements.txt
+RUN pip install --default-timeout=30000 --no-cache-dir --prefer-binary -r requirements.txt
 
 # BGE models are downloaded at first run and persist in the HF cache volume.
 # They are NOT downloaded at build time (build-time network is unavailable in this environment).

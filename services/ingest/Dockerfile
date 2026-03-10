@@ -36,10 +36,14 @@ RUN useradd --system --create-home --shell /bin/bash ingestuser
 
 WORKDIR /app
 
+# Pre-install CPU-only PyTorch to prevent docling from pulling 2.5GB CUDA binaries or compiling from source
+RUN pip install --default-timeout=30000 --no-cache-dir --only-binary :all: \
+    torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
 # Install Python dependencies
 COPY services/ingest/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --default-timeout=30000 --no-cache-dir --prefer-binary -r requirements.txt
 
 # Copy shared utilities and service code
 COPY shared/ /app/shared/

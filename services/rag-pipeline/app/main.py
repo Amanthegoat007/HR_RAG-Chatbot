@@ -131,6 +131,7 @@ async def query(request: QueryRequest, req: Request):
         http_client=req.app.state.http_client,
         qdrant_client=req.app.state.qdrant_client,
         cache=req.app.state.cache,
+        conversation_history=request.conversation_history,
     )
 
     if request.stream:

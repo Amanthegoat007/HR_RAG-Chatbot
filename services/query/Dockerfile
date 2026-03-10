@@ -22,7 +22,7 @@ WORKDIR /app
 
 COPY services/query/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --default-timeout=30000 --no-cache-dir -r requirements.txt
 
 COPY shared/ /app/shared/
 COPY services/query/app/ /app/app/

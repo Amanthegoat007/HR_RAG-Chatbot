@@ -2,6 +2,7 @@
 ============================================================================
 FILE: services/rag-pipeline/app/prompt_templates.py
 PURPOSE: System prompt and context templates for grounded HR responses.
+         Optimized for Qwen3.5-9B with strict document-only grounding.
 ARCHITECTURE REF: §8 — Prompt Template
 ============================================================================
 """
@@ -12,38 +13,25 @@ from typing import Any
 from app.answer_planner import AnswerPlan
 from app.config import settings
 
-SYSTEM_PROMPT = """You are an HR Knowledge Assistant. Use ONLY the provided context and verified evidence.
+SYSTEM_PROMPT = """You are Esyasoft's HR Policy Assistant.
 
-Return output in this markdown schema:
-### Answer
-<one direct answer sentence>
+TASK:
+Provide a precise, factual answer to the user's question using ONLY the provided Context.
 
-1. <optional item>
-2. <optional item>
+RULES:
+1. If the Context does not contain the answer, reply exactly with: "This information is not available in the current HR knowledge base."
+2. Extract the facts directly. Do not explain your process, do not use filler words, and do not add preamble.
+3. Keep your response brief. Stop writing immediately after answering the core question.
 
-(Source: filename | Section: section | Page: page)
-<END_ANSWER>
-
-Rules:
-1. Return valid markdown only.
-2. Keep it concise and factual.
-3. Use VERIFIED_EVIDENCE first. If it contains steps or a final answer, do not contradict it.
-4. Never omit values or list items that appear in VERIFIED_EVIDENCE.
-5. Use a numbered list only when multiple points are needed.
-6. Use bold only for key values and policy names.
-7. Never invent facts outside context.
-8. If missing, return exactly:
-   "This information is not available in the current HR knowledge base."
-9. End with exactly one citation line and then <END_ANSWER>.
-
-VERIFIED_EVIDENCE:
-{verified_evidence}
+FORMAT:
+- Use bullet points for lists.
+- Use bold text for key terms.
 
 Context:
 {context}
 """
 
-CONTEXT_TEMPLATE = """[Source: {filename} | Section: {section} | Page: {page_number}]
+CONTEXT_TEMPLATE = """--- Document: {filename} | Section: {section} | Page: {page_number} ---
 {chunk_text}"""
 
 _STOPWORDS = {
@@ -59,36 +47,28 @@ def _extract_query_terms(query: str) -> set[str]:
 
 
 def _truncate_chunk_text(text: str, query_terms: set[str]) -> str:
+    """
+    Prepare chunk text for the LLM prompt.
+
+    Sends as much of the chunk as possible within the configured character limit.
+    No aggressive sentence filtering — the retriever and reranker already selected
+    the most relevant chunks. Truncation should be a last resort, not the default.
+    """
     if not text:
         return ""
 
+    # Normalize whitespace
     cleaned = " ".join(text.split())
-    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
-    sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
-
-    if not sentences:
+    if not cleaned:
         return ""
 
-    max_sentences = max(1, min(settings.prompt_max_chunk_sentences, 4))
+    # Use the configured char limit (default 1200, configurable via PROMPT_MAX_CHUNK_CHARS)
+    limit = settings.prompt_max_chunk_chars
+    if len(cleaned) <= limit:
+        return cleaned
 
-    if not query_terms:
-        selected = sentences[:max_sentences]
-    else:
-        scored: list[tuple[int, int, str]] = []
-        for idx, sentence in enumerate(sentences):
-            lowered = sentence.lower()
-            score = sum(1 for term in query_terms if term in lowered)
-            scored.append((score, idx, sentence))
-
-        scored.sort(key=lambda row: (row[0], -row[1]), reverse=True)
-        top = sorted(scored[:max_sentences], key=lambda row: row[1])
-        selected = [row[2] for row in top]
-
-    compact = " ".join(selected).strip() or cleaned
-    limit = max(180, min(settings.prompt_max_chunk_chars, 450))
-    if len(compact) <= limit:
-        return compact
-    return compact[:limit].rstrip() + " ..."
+    # Only truncate if exceeding the limit — preserve as much context as possible
+    return cleaned[:limit].rstrip() + " ..."
 
 
 def build_context_string(retrieved_chunks: list[dict[str, Any]], question: str) -> str:
@@ -98,14 +78,16 @@ def build_context_string(retrieved_chunks: list[dict[str, Any]], question: str) 
     query_terms = _extract_query_terms(question)
     parts: list[str] = []
     for chunk in retrieved_chunks:
-        parts.append(CONTEXT_TEMPLATE.format(
-            filename=chunk.get("filename", "Unknown"),
-            section=chunk.get("section", "Unknown Section"),
-            page_number=chunk.get("page_number", "?"),
-            chunk_text=_truncate_chunk_text(chunk.get("text", ""), query_terms),
-        ))
+        chunk_text = _truncate_chunk_text(chunk.get("text", ""), query_terms)
+        if chunk_text:
+            parts.append(CONTEXT_TEMPLATE.format(
+                filename=chunk.get("filename", "Unknown"),
+                section=chunk.get("section", "Unknown Section"),
+                page_number=chunk.get("page_number", "?"),
+                chunk_text=chunk_text,
+            ))
 
-    return "\n".join(parts)
+    return "\n\n".join(parts)
 
 
 def build_prompt(
@@ -114,39 +96,40 @@ def build_prompt(
     answer_plan: AnswerPlan | None = None,
 ) -> str:
     context = build_context_string(retrieved_chunks, question)
-    verified_evidence = _build_verified_evidence(answer_plan)
-    return SYSTEM_PROMPT.format(
-        context=context,
-        verified_evidence=verified_evidence,
-    )
+    return SYSTEM_PROMPT.format(context=context)
 
 
-def format_as_mistral_chat(system_prompt: str, question: str) -> list[dict[str, str]]:
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": question},
-    ]
+def format_as_chat(
+    system_prompt: str,
+    question: str,
+    conversation_history: list | None = None,
+) -> list[dict[str, str]]:
+    """Format messages for the LLM chat API (OpenAI-compatible format)."""
+    messages = [{"role": "system", "content": system_prompt}]
+
+    valid_history = []
+    if conversation_history:
+        expected_role = "assistant"
+        for turn in reversed(conversation_history):
+            role = turn.get("role", "")
+            content = turn.get("content", "")
+            if role == expected_role and content:
+                if role == "assistant" and len(content) > 200:
+                    content = content[:200] + "..."
+                valid_history.insert(0, {"role": role, "content": content})
+                expected_role = "user" if role == "assistant" else "assistant"
+                
+            if len(valid_history) >= 6 and expected_role == "assistant":
+                break
+                
+        if expected_role == "user" and valid_history:
+            valid_history.pop(0)
+
+        messages.extend(valid_history)
+
+    messages.append({"role": "user", "content": question})
+    return messages
 
 
-def _build_verified_evidence(answer_plan: AnswerPlan | None) -> str:
-    if not answer_plan:
-        return "None."
-
-    lines = [f"Question type: {answer_plan.question_type}"]
-    if answer_plan.facts:
-        lines.append("Facts:")
-        lines.extend(f"- {fact}" for fact in answer_plan.facts[:8])
-    if answer_plan.steps:
-        lines.append("Steps:")
-        lines.extend(f"- {step}" for step in answer_plan.steps[:6])
-    if answer_plan.final_answer:
-        lines.append(f"Allowed final answer: {answer_plan.final_answer}")
-    if answer_plan.citation_chunks:
-        primary = answer_plan.citation_chunks[0]
-        lines.append(
-            "Use citation: "
-            f"(Source: {primary.get('filename', 'Unknown')} | "
-            f"Section: {primary.get('section', 'Unknown Section') or 'Unknown Section'} | "
-            f"Page: {primary.get('page_number', primary.get('page_start', '?'))})"
-        )
-    return "\n".join(lines)
+# Backward-compatible alias
+format_as_mistral_chat = format_as_chat

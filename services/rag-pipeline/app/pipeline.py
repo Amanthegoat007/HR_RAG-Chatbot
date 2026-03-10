@@ -79,12 +79,71 @@ def _normalize_query(query: str) -> str:
     return " ".join(query.split())
 
 
+def _expand_with_neighbors(
+    selected_chunks: list[dict[str, Any]],
+    all_retrieved_chunks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """
+    Sentence Window Retrieval: expand each selected chunk with its
+    immediate neighbors (chunk_index ± 1) from the same document.
+
+    Uses the already-retrieved chunk pool — zero extra Qdrant calls.
+    If a neighbor is found, its text is merged before/after the chunk
+    so the LLM sees the full context window around each passage.
+    """
+    if not selected_chunks or not all_retrieved_chunks:
+        return selected_chunks
+
+    # Build a fast lookup: (document_id, chunk_index) → chunk
+    chunk_lookup: dict[tuple[str, int], dict[str, Any]] = {}
+    for chunk in all_retrieved_chunks:
+        doc_id = chunk.get("document_id", "")
+        ci = chunk.get("chunk_index", -1)
+        if doc_id and ci >= 0:
+            chunk_lookup[(doc_id, ci)] = chunk
+
+    expanded: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+
+    for chunk in selected_chunks:
+        doc_id = chunk.get("document_id", "")
+        ci = chunk.get("chunk_index", -1)
+        key = chunk.get("point_id") or f"{doc_id}:{ci}"
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+
+        # Look for neighbors in the retrieved pool
+        parts: list[str] = []
+        prev_chunk = chunk_lookup.get((doc_id, ci - 1)) if doc_id and ci > 0 else None
+        next_chunk = chunk_lookup.get((doc_id, ci + 1)) if doc_id else None
+
+        if prev_chunk and prev_chunk.get("point_id", "") not in seen_keys:
+            prev_text = prev_chunk.get("text", "").strip()
+            if prev_text:
+                parts.append(prev_text)
+
+        parts.append(chunk.get("text", "").strip())
+
+        if next_chunk and next_chunk.get("point_id", "") not in seen_keys:
+            next_text = next_chunk.get("text", "").strip()
+            if next_text:
+                parts.append(next_text)
+
+        # Create an expanded copy with merged text
+        expanded_chunk = {**chunk, "text": "\n\n".join(parts)}
+        expanded.append(expanded_chunk)
+
+    return expanded
+
+
 async def run_query_pipeline(
     query: str,
     document_id: Optional[str],
     http_client: httpx.AsyncClient,
     qdrant_client: AsyncQdrantClient,
     cache: SemanticCache,
+    conversation_history: list | None = None,
 ) -> AsyncGenerator[Any, None]:
     """
     Execute the full RAG pipeline and yield SSE events.
@@ -267,6 +326,13 @@ async def run_query_pipeline(
         reranked_chunks=reranked_chunks,
         answer_plan=answer_plan,
     )
+
+    # ── Neighbor Chunk Expansion (Sentence Window Retrieval) ──────────────────
+    # For each selected chunk, look for chunk_index ± 1 in the already-retrieved
+    # pool. If found, merge the neighbor text to give the LLM fuller context.
+    # This is a zero-cost expansion — no extra Qdrant calls needed.
+    selected_chunks = _expand_with_neighbors(selected_chunks, retrieved_chunks)
+
     source_chunks = answer_plan.citation_chunks or selected_chunks
     response_meta = {
         "answer_path": answer_plan.answer_path,
@@ -311,6 +377,7 @@ async def run_query_pipeline(
     messages = format_as_mistral_chat(
         system_prompt=system_prompt_with_context,
         question=normalized_query,
+        conversation_history=conversation_history,
     )
 
     answer_tokens: list[str] = []

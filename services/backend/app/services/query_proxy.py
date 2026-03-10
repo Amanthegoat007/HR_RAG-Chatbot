@@ -26,7 +26,8 @@ async def stream_rag_pipeline(
     payload = {
         "query": message,
         "conversation_id": "temp",
-        "stream": True
+        "stream": True,
+        "conversation_history": conversation_history or [],
     }
 
     collected_tokens: list[str] = []

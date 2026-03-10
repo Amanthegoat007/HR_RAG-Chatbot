@@ -27,17 +27,19 @@ class RagSettings(BaseSettings):
     llm_circuit_breaker_recovery_seconds: int = 60
     llm_provider: str = "local"  # "local" | "azure_openai"
     llm_temperature: float = 0.1
-    llm_max_tokens: int = 256
-    llm_max_tokens_short: int = 120
-    llm_max_tokens_medium: int = 180
-    llm_max_tokens_long: int = 256
+    llm_max_tokens: int = 1024
+    llm_max_tokens_short: int = 512
+    llm_max_tokens_medium: int = 768
+    llm_max_tokens_long: int = 1024
     llm_top_p: float = 0.95
+    llm_frequency_penalty: float = 0.2
+    llm_presence_penalty: float = 0.2
     llm_stop_sequence: str = "<END_ANSWER>"
     llm_adaptive_tokens_enabled: bool = True
     llm_stream_timeout_seconds: float = 300.0
-    prompt_max_chunks: int = 2
-    prompt_max_chunk_chars: int = 450
-    prompt_max_chunk_sentences: int = 4
+    prompt_max_chunks: int = 6
+    prompt_max_chunk_chars: int = 2000
+    prompt_max_chunk_sentences: int = 15
     deterministic_answers_enabled: bool = False
     deterministic_calc_enabled: bool = False
     deterministic_list_enabled: bool = False
@@ -59,7 +61,7 @@ class RagSettings(BaseSettings):
 
     # ─── Reranker Model (In-Process BGE-Reranker) ─────────────────────────
     reranker_model_name: str = "BAAI/bge-reranker-v2-m3"
-    reranker_max_length: int = 512
+    reranker_max_length: int = 1024
     reranker_batch_size: int = 16
     reranker_svc_url: str = "http://localhost:8005"  # Legacy, unused in consolidated mode
     reranker_timeout_seconds: float = 30.0
@@ -69,12 +71,12 @@ class RagSettings(BaseSettings):
     model_download_workers: int = 16
 
     # ─── Retrieval & Reranking Pipeline ───────────────────────────────────
-    retrieval_rerank_top_n: int = 20
-    retrieval_dense_top_k: int = 15
-    retrieval_sparse_top_k: int = 15
+    retrieval_rerank_top_n: int = 40
+    retrieval_dense_top_k: int = 30
+    retrieval_sparse_top_k: int = 30
     hybrid_search_alpha: float = 0.5
-    top_k_retrieval: int = 20
-    top_n_rerank: int = 3
+    top_k_retrieval: int = 40
+    top_n_rerank: int = 8
     top_n_rerank_calc: int = 4
     top_n_rerank_list: int = 6
     score_threshold: float = 0.2

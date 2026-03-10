@@ -116,6 +116,38 @@ def _infer_content_metadata(text: str) -> tuple[str, list[str], bool, bool, bool
     return content_type, evidence_tags, contains_currency, contains_steps, contains_ranges
 
 
+def _build_contextual_header(
+    filename: str,
+    heading_path: list[str],
+    section_heading: str,
+    page_start: int,
+    page_end: int,
+    chunk_type: str,
+) -> str:
+    """
+    Build a contextual header to prepend to chunk text before embedding.
+
+    This implements Anthropic's Contextual Retrieval pattern (2024):
+    by including document structure in the embedded text, the embedding
+    model can discriminate between a Table of Contents entry and the
+    actual content that lives under that heading on a different page.
+    """
+    parts: list[str] = []
+    if filename:
+        parts.append(f"Document: {filename}")
+    if heading_path and any(heading_path):
+        parts.append(f"Section: {' > '.join(h for h in heading_path if h)}")
+    elif section_heading:
+        parts.append(f"Section: {section_heading}")
+    if page_start == page_end:
+        parts.append(f"Page {page_start}")
+    else:
+        parts.append(f"Pages {page_start}-{page_end}")
+    if chunk_type not in ("paragraph", "list_item"):
+        parts.append(f"Type: {chunk_type}")
+    return " | ".join(parts) + "\n\n"
+
+
 def _make_chunk(
     *,
     chunk_index: int,
@@ -133,12 +165,24 @@ def _make_chunk(
     table_id: str | None = None,
     row_index: int | None = None,
     parent_chunk_id: str | None = None,
+    filename: str = "",
 ) -> DocumentChunk:
+    # Build contextual header and prepend to chunk text
+    header = _build_contextual_header(
+        filename=filename,
+        heading_path=heading_path,
+        section_heading=section_heading,
+        page_start=page_start,
+        page_end=page_end,
+        chunk_type=chunk_type,
+    )
+    enriched_text = header + text
+
     content_type, evidence_tags, contains_currency, contains_steps, contains_ranges = _infer_content_metadata(text)
     return DocumentChunk(
         chunk_index=chunk_index,
-        text=text,
-        token_count=_count_tokens(text, tokenizer),
+        text=enriched_text,
+        token_count=_count_tokens(enriched_text, tokenizer),
         section_heading=section_heading,
         page_number=page_start,
         page_start=page_start,
@@ -205,6 +249,39 @@ def chunk_normalized_document(
     tokenizer = _get_tokenizer()
     chunks: list[DocumentChunk] = []
     chunk_index = 0
+    doc_filename = normalized.source_filename or ""
+
+    # Synthesize a Table of Contents / Document Structure chunk
+    headings = []
+    for block in normalized.blocks:
+        if block.block_type == "heading":
+            level = block.metadata.get("level", 1)
+            if level <= 3:  # Keep TOC concise: only h1, h2, h3
+                indent = "  " * (level - 1)
+                headings.append(f"{indent}- **{block.text.strip()}** (Page {block.page_start})")
+                
+    if headings:
+        toc_content = "Document Structure and Table of Contents:\n" + "\n".join(headings)
+        toc_chunks = _chunk_text_units(toc_content, chunk_size=800, overlap=50, tokenizer=tokenizer)
+        for tc in toc_chunks:
+            chunks.append(
+                _make_chunk(
+                    chunk_index=chunk_index,
+                    text=tc,
+                    section_heading="Table of Contents",
+                    page_start=1,
+                    page_end=max(1, normalized.page_count),
+                    heading_path=["Table of Contents"],
+                    chunk_type="table_of_contents",
+                    source_format=normalized.source_format,
+                    parser_used=normalized.parser_used,
+                    quality_score=normalized.quality_score,
+                    quality_flags=normalized.quality_flags,
+                    tokenizer=tokenizer,
+                    filename=doc_filename,
+                )
+            )
+            chunk_index += 1
 
     for block in normalized.blocks:
         heading_path = block.heading_path or []
@@ -231,6 +308,7 @@ def chunk_normalized_document(
                 quality_flags=normalized.quality_flags,
                 tokenizer=tokenizer,
                 table_id=block.block_id,
+                filename=doc_filename,
             )
             chunks.append(full_chunk)
             parent_chunk_id = str(chunk_index)
@@ -265,51 +343,52 @@ def chunk_normalized_document(
                     table_id=block.block_id,
                     row_index=row_index,
                     parent_chunk_id=parent_chunk_id,
+                    filename=doc_filename,
                 )
                 chunks.append(row_chunk)
                 chunk_index += 1
             continue
 
         if block.block_type == "list":
-            list_items = [line.strip() for line in block_text.splitlines() if line.strip()]
-            for item in list_items:
-                if _count_tokens(item, tokenizer) <= chunk_size:
+            if _count_tokens(block_text, tokenizer) <= chunk_size:
+                chunks.append(
+                    _make_chunk(
+                        chunk_index=chunk_index,
+                        text=block_text,
+                        section_heading=section_heading,
+                        page_start=page_start,
+                        page_end=page_end,
+                        heading_path=heading_path,
+                        chunk_type="list",
+                        source_format=normalized.source_format,
+                        parser_used=normalized.parser_used,
+                        quality_score=normalized.quality_score,
+                        quality_flags=normalized.quality_flags,
+                        tokenizer=tokenizer,
+                        filename=doc_filename,
+                    )
+                )
+                chunk_index += 1
+            else:
+                for unit_chunk in _chunk_text_units(block_text, chunk_size, overlap, tokenizer):
                     chunks.append(
                         _make_chunk(
                             chunk_index=chunk_index,
-                            text=item,
+                            text=unit_chunk,
                             section_heading=section_heading,
                             page_start=page_start,
                             page_end=page_end,
                             heading_path=heading_path,
-                            chunk_type="list_item",
+                            chunk_type="list",
                             source_format=normalized.source_format,
                             parser_used=normalized.parser_used,
                             quality_score=normalized.quality_score,
                             quality_flags=normalized.quality_flags,
                             tokenizer=tokenizer,
+                            filename=doc_filename,
                         )
                     )
                     chunk_index += 1
-                else:
-                    for unit_chunk in _chunk_text_units(item, chunk_size, overlap, tokenizer):
-                        chunks.append(
-                            _make_chunk(
-                                chunk_index=chunk_index,
-                                text=unit_chunk,
-                                section_heading=section_heading,
-                                page_start=page_start,
-                                page_end=page_end,
-                                heading_path=heading_path,
-                                chunk_type="list_item",
-                                source_format=normalized.source_format,
-                                parser_used=normalized.parser_used,
-                                quality_score=normalized.quality_score,
-                                quality_flags=normalized.quality_flags,
-                                tokenizer=tokenizer,
-                            )
-                        )
-                        chunk_index += 1
             continue
 
         for unit_chunk in _chunk_text_units(block_text, chunk_size, overlap, tokenizer):
@@ -327,6 +406,7 @@ def chunk_normalized_document(
                     quality_score=normalized.quality_score,
                     quality_flags=normalized.quality_flags,
                     tokenizer=tokenizer,
+                    filename=doc_filename,
                 )
             )
             chunk_index += 1

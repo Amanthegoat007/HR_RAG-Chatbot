@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install CPU-only PyTorch first (docling pulls torch, but we don't need CUDA — saves ~700MB)
-RUN pip install --default-timeout=300 --no-cache-dir \
+RUN pip install --default-timeout=30000 --no-cache-dir --only-binary :all: \
     torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --default-timeout=300 --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=30000 --no-cache-dir --prefer-binary -r requirements.txt
 
 # Copy shared library (assuming it's mounted in docker-compose, but good practice to copy if standalone)
 # In docker-compose, we'll mount /app/shared

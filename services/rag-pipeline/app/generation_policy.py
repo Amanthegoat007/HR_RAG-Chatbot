@@ -60,7 +60,7 @@ def choose_generation_policy(query: str, question_type: str = "fact") -> Generat
 
     bounded = max(48, min(int(max_tokens), int(settings.llm_max_tokens)))
     stop = [settings.llm_stop_sequence] if settings.llm_stop_sequence else []
-    temperature = 0.0 if question_type in {"calc", "list"} else settings.llm_temperature
+    temperature = 0.0  # Always use 0.0 for RAG — strict document grounding, no creativity
     return GenerationPolicy(
         profile=profile,
         max_tokens=bounded,

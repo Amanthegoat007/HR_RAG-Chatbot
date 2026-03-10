@@ -10,7 +10,7 @@ pydantic-settings==2.3.0
 python-multipart==0.0.9   # Required for FastAPI file upload (UploadFile)
 
 # Document processing — the "Convert to Markdown" pipeline (Architecture §3.1)
-pymupdf==1.24.1            # PyMuPDF: fast PDF text+table extraction
+pymupdf==1.25.3            # Upgraded from 1.24.1 — better PDF text/table extraction
 unstructured==0.14.4       # Lightweight fallback parser core (avoid heavy GPU inference deps)
 pdfminer.six>=20221105     # Ensure PDF fast-path support for unstructured
 pypdf>=4.0.0               # Ensure PDF parsing primitives are available
@@ -27,16 +27,16 @@ nltk==3.8.1                # Sentence tokenization for sentence-aligned chunking
 
 # Celery (async task queue) + Redis Streams broker
 celery[redis]==5.4.0
-redis==5.0.4               # Redis client (also used for cache)
+redis==5.2.1               # Redis client (also used for cache)
 
 # Object storage
-minio==7.2.7               # MinIO Python SDK
+minio==7.2.12              # MinIO Python SDK — upgraded from 7.2.7
 
 # Database
-asyncpg==0.29.0            # Async PostgreSQL driver
+asyncpg==0.30.0            # Async PostgreSQL driver
 
 # Vector database
-qdrant-client==1.9.1       # Qdrant Python client (matches server version)
+qdrant-client>=1.12.0,<1.13.0  # Qdrant Python client (matches server v1.12.6)
 
 # HTTP client (calls embedding-svc)
 httpx==0.27.0

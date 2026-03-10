@@ -1,0 +1,640 @@
+﻿ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 
+ingest-worker  | Usage: celery [OPTIONS] COMMAND [ARGS]...
+ingest-worker  | Try 'celery --help' for help.
+ingest-worker  | 
+ingest-worker  | Error: Invalid value for '-A' / '--app': 
+ingest-worker  | Unable to load celery application.
+ingest-worker  | While trying to load the module app.celery_app the following error occurred:
+ingest-worker  | Traceback (most recent call last):
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/bin/celery.py", line 58, in convert
+ingest-worker  |     return find_app(value)
+ingest-worker  |            ^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/app/utils.py", line 386, in find_app
+ingest-worker  |     sym = imp(app)
+ingest-worker  |           ^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+ingest-worker  |     return imp(module, package=package)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+ingest-worker  |     return _bootstrap._gcd_import(name[level:], package, level)
+ingest-worker  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+ingest-worker  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+ingest-worker  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+ingest-worker  |   File "/app/app/celery_app.py", line 27, in <module>
+ingest-worker  |     from app.config import settings
+ingest-worker  |   File "/app/app/config.py", line 58, in <module>
+ingest-worker  |     settings = IngestSettings()
+ingest-worker  |                ^^^^^^^^^^^^^^^^
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic_settings/main.py", line 140, in __init__
+ingest-worker  |     super().__init__(
+ingest-worker  |   File "/usr/local/lib/python3.12/site-packages/pydantic/main.py", line 250, in __init__
+ingest-worker  |     validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+ingest-worker  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ingest-worker  | pydantic_core._pydantic_core.ValidationError: 1 validation error for IngestSettings
+ingest-worker  | jwt_secret
+ingest-worker  |   Field required [type=missing, input_value={'postgres_dsn': 'postgre...', 'log_format': 'json'}, input_type=dict]
+ingest-worker  |     For further information visit https://errors.pydantic.dev/2.12/v/missing
+ingest-worker  | 

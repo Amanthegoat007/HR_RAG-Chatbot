@@ -60,6 +60,8 @@ services:
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
       USER_USERNAME: ${USER_USERNAME:-hr_user}
       USER_PASSWORD_HASH: ${USER_PASSWORD_HASH}
+    volumes:
+      - ./services/backend/app:/app/app:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -211,18 +213,22 @@ services:
       RERANKER_MODEL_NAME: ${RERANKER_MODEL_NAME:-/models/bge-reranker-v2-m3}
       LLM_SERVER_URL: ${LLM_SERVER_URL:-http://localhost:8080}
       LLM_PROVIDER: ${LLM_PROVIDER:-local}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-256}
-      LLM_MAX_TOKENS_SHORT: ${LLM_MAX_TOKENS_SHORT:-120}
-      LLM_MAX_TOKENS_MEDIUM: ${LLM_MAX_TOKENS_MEDIUM:-180}
-      LLM_MAX_TOKENS_LONG: ${LLM_MAX_TOKENS_LONG:-256}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-400}
+      LLM_MAX_TOKENS_SHORT: ${LLM_MAX_TOKENS_SHORT:-200}
+      LLM_MAX_TOKENS_MEDIUM: ${LLM_MAX_TOKENS_MEDIUM:-300}
+      LLM_MAX_TOKENS_LONG: ${LLM_MAX_TOKENS_LONG:-400}
       LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.1}
       LLM_TOP_P: ${LLM_TOP_P:-0.95}
       LLM_STOP_SEQUENCE: ${LLM_STOP_SEQUENCE:-<END_ANSWER>}
       LLM_ADAPTIVE_TOKENS_ENABLED: ${LLM_ADAPTIVE_TOKENS_ENABLED:-true}
-      PROMPT_MAX_CHUNKS: ${PROMPT_MAX_CHUNKS:-2}
-      PROMPT_MAX_CHUNK_CHARS: ${PROMPT_MAX_CHUNK_CHARS:-450}
-      PROMPT_MAX_CHUNK_SENTENCES: ${PROMPT_MAX_CHUNK_SENTENCES:-4}
-      TOP_N_RERANK: ${TOP_N_RERANK:-10}
+      PROMPT_MAX_CHUNKS: ${PROMPT_MAX_CHUNKS:-6}
+      PROMPT_MAX_CHUNK_CHARS: ${PROMPT_MAX_CHUNK_CHARS:-800}
+      PROMPT_MAX_CHUNK_SENTENCES: ${PROMPT_MAX_CHUNK_SENTENCES:-15}
+      TOP_N_RERANK: ${TOP_N_RERANK:-8}
+      RETRIEVAL_DENSE_TOP_K: ${RETRIEVAL_DENSE_TOP_K:-30}
+      RETRIEVAL_SPARSE_TOP_K: ${RETRIEVAL_SPARSE_TOP_K:-30}
+      RETRIEVAL_RERANK_TOP_N: ${RETRIEVAL_RERANK_TOP_N:-40}
+      RERANKER_MAX_LENGTH: ${RERANKER_MAX_LENGTH:-1024}
       DETERMINISTIC_ANSWERS_ENABLED: ${DETERMINISTIC_ANSWERS_ENABLED:-false}
       DETERMINISTIC_CALC_ENABLED: ${DETERMINISTIC_CALC_ENABLED:-false}
       DETERMINISTIC_LIST_ENABLED: ${DETERMINISTIC_LIST_ENABLED:-false}
@@ -232,8 +238,12 @@ services:
       MODEL_DOWNLOAD_WORKERS: ${MODEL_DOWNLOAD_WORKERS:-16}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       HF_HUB_OFFLINE: 1
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
     volumes:
       - ./services/llm/models:/models:ro
+      - ./services/rag-pipeline/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
+      - ./services/rag-pipeline/app:/app/app:ro
     depends_on:
       qdrant:
         condition: service_started
@@ -317,7 +327,7 @@ services:
   # 9. QDRANT — Vector database
   # ==========================================================================
   qdrant:
-    image: qdrant/qdrant:v1.9.0
+    image: qdrant/qdrant:v1.12.6
     container_name: qdrant
     environment:
       QDRANT__SERVICE__GRPC_PORT: "6334"

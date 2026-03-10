@@ -1,0 +1,54 @@
+﻿docker :   return QdrantClient(url=settings.qdrant_url, timeout=30)
+At line:1 char:1
++ docker logs backend --tail 40 2>&1 | Out-File -FilePath backend_logs. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  return Qdrant...rl, timeout=30): 
+   String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ERROR:    Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 
+694, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 212, 
+in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 212, 
+in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 212, 
+in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 212, 
+in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "/usr/local/lib/python3.11/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/main.py", line 39, in lifespan
+    ensure_collection_exists(qdrant_client)
+  File "/app/app/qdrant_client_wrapper.py", line 67, in ensure_collection_exists
+    size=settings.embedding_dense_dim,  # 1024
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pydantic/main.py", line 1026, 
+in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute 
+{item!r}')
+AttributeError: 'BackendSettings' object has no attribute 'embedding_dense_dim'
+
+ERROR:    Application startup failed. Exiting.
+2026-03-04 18:51:17,635 WARN exited: fastapi (exit status 3; not expected)
+2026-03-04 18:51:18,639 INFO spawned: 'fastapi' with pid 944
+2026-03-04 18:51:19,641 INFO success: fastapi entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

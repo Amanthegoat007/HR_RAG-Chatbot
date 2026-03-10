@@ -1,10 +1,9 @@
-import { Box, LoadingOverlay, MantineProvider } from "@mantine/core";
+import { Box, LoadingOverlay } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LoginForm, LoginFeaturesPanel } from "./components";
 
 import { useAppSelector } from "@/store/hooks";
-import { theme } from "@/theme";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -19,7 +18,6 @@ export default function LoginPage() {
   }, [isAuthenticated, user, navigate, isInitialized]);
 
   return (
-    <MantineProvider theme={theme} forceColorScheme="light">
       <Box
         style={{
           display: "flex",
@@ -40,6 +38,5 @@ export default function LoginPage() {
         {/* Right Panel - Login Form */}
         <LoginForm setLoading={setLoading} />
       </Box>
-    </MantineProvider>
   );
 }

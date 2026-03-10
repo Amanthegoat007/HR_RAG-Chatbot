@@ -46,8 +46,10 @@ def make_stage_event(stage: str, label: str, status: str = "active") -> SSEEvent
 
 
 def make_sources_event(chunks: list[dict[str, Any]]) -> SSEEvent:
+    # Send top-3 most relevant sources for user evidence/cross-referencing
+    top_chunks = chunks[:3] if chunks else []
     sources = []
-    for chunk in chunks:
+    for chunk in top_chunks:
         source = {
             "filename": chunk.get("filename", ""),
             "section": chunk.get("section", ""),
@@ -67,7 +69,7 @@ def make_sources_event(chunks: list[dict[str, Any]]) -> SSEEvent:
             "row_index": chunk.get("row_index"),
             "parent_chunk_id": chunk.get("parent_chunk_id"),
             "evidence_tags": chunk.get("evidence_tags", []),
-            "text": chunk.get("text", "")[:500],  # Include chunk text for expandable cards (cap at 500 chars)
+            "text": chunk.get("text", "")[:3000],  # Include chunk text for expandable cards (increased limit so UI doesn't visually cut off valid chunks)
         }
         if chunk.get("heading_path"):
             source["heading_path"] = chunk["heading_path"]

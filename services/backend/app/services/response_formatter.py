@@ -2,92 +2,47 @@ import re
 from typing import Any
 
 
-def _format_source_line(source: dict[str, Any]) -> str:
-    filename = source.get("filename") or "Unknown"
-    section = source.get("section") or "Unknown Section"
-    page = source.get("page_number") or "?"
-    return f"(Source: {filename} | Section: {section} | Page: {page})"
-
-
-def _canonical_citation_line(raw_citation: str, sources: list[dict[str, Any]] | None) -> str:
-    inner_match = re.search(r"\(Source:\s*(.*?)\)\s*$", raw_citation.strip(), flags=re.IGNORECASE)
-    if not inner_match:
-        return _format_source_line((sources or [{}])[0])
-
-    inner = inner_match.group(1).strip()
-    filename = "Unknown"
-    section = "Unknown Section"
-    page = "?"
-
-    if "|" in inner:
-        parts = [p.strip() for p in inner.split("|")]
-        if parts:
-            filename = parts[0] or filename
-        for part in parts[1:]:
-            if ":" not in part:
-                continue
-            key, value = part.split(":", 1)
-            k = key.strip().lower()
-            v = value.strip()
-            if k == "section" and v:
-                section = v
-            elif k == "page" and v:
-                page = v
-    else:
-        pieces = [p.strip() for p in inner.split(",") if p.strip()]
-        if pieces:
-            filename = pieces[0]
-        for piece in pieces[1:]:
-            page_match = re.search(r"page\s*([0-9?]+)", piece, flags=re.IGNORECASE)
-            if page_match:
-                page = page_match.group(1)
-                break
-
-    if (section == "Unknown Section" or page == "?") and sources:
-        src = sources[0]
-        section = section if section != "Unknown Section" else (src.get("section") or "Unknown Section")
-        page = page if page != "?" else (src.get("page_number") or "?")
-
-    return f"(Source: {filename} | Section: {section} | Page: {page})"
-
-
-def _normalize_lists(text: str) -> str:
-    # Put each numbered item on its own line if the model merges them.
-    text = re.sub(r"([.!?])\s+(\d+\.\s+)", r"\1\n\n\2", text)
-    text = re.sub(r"\s+(\d+\.\s+)\*\*", r"\n\1**", text)
-    text = re.sub(r"(\d+\.)\s+—\s+", r"\1 ", text)
-    text = re.sub(r"([^\n])\s+(-\s+\*\*)", r"\1\n\2", text)
-    text = re.sub(r"([^\n])\s+(-\s+)", r"\1\n\2", text)
-    return text
-
-
 def normalize_markdown_answer(text: str, sources: list[dict[str, Any]] | None = None) -> str:
     """
-    Enforce a stable assistant markdown schema:
-    1) Heading
-    2) Body/list
-    3) Single citation line
+    Clean up raw LLM output into well-formed markdown.
+
+    This does NOT inject any headers or citations — the system prompt
+    already instructs the LLM to answer directly, and source citations
+    are sent separately via SSE events.
     """
     cleaned = (text or "")
     cleaned = cleaned.replace("\r\n", "\n").replace("\u00a0", " ")
+
+    # Remove stop tokens the LLM may emit
     cleaned = cleaned.replace("<END_ANSWER>", "")
+
+    # Strip any "### Answer" or "**Answer**" headers the LLM may still produce
+    cleaned = re.sub(r"^#{1,4}\s*Answer\s*\n+", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^\*{1,2}Answer\*{1,2}\s*\n+", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^Answer[:\s]*\n+", "", cleaned, flags=re.IGNORECASE)
+
+    # Remove inline (Source: ...) citations — sources are shown separately
+    cleaned = re.sub(r"\n?\(Source:[^)]+\)\s*", "\n", cleaned)
+
+    # Normalize list formatting
     cleaned = _normalize_lists(cleaned)
+
+    # Clean up whitespace
     cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
 
-    citation_matches = re.findall(r"\(Source:[^)]+\)", cleaned)
-    cleaned = re.sub(r"\n?\(Source:[^)]+\)\s*", "\n", cleaned).strip()
-
-    citation_line = ""
-    if citation_matches:
-        citation_line = _canonical_citation_line(citation_matches[0], sources)
-    elif sources:
-        citation_line = _format_source_line(sources[0])
-
-    if cleaned and not cleaned.lstrip().startswith("#"):
-        cleaned = f"### Answer\n\n{cleaned}"
-
-    if citation_line:
-        cleaned = f"{cleaned}\n\n{citation_line}".strip()
-
     return cleaned
+
+
+def _normalize_lists(text: str) -> str:
+    """Ensure numbered and bullet lists have proper line breaks."""
+    # Split merged numbered items: "sentence. 1. item" or "steps: 1. item"
+    text = re.sub(r"([.!?:])\s+(\d+\.\s+)", r"\1\n\n\2", text)
+    # Also split "text 1. **item" where there's no punctuation before the number
+    text = re.sub(r"([a-z])\s+(\d+\.\s+\*\*)", r"\1\n\n\2", text)
+    # Fix "1. — item" dash formatting
+    text = re.sub(r"(\d+\.)\s+—\s+", r"\1 ", text)
+    # Split merged bullet items
+    text = re.sub(r"([^\n])\s+(-\s+\*\*)", r"\1\n\2", text)
+    text = re.sub(r"([^\n])\s+(-\s+)", r"\1\n\2", text)
+    return text

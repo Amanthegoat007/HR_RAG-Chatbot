@@ -66,8 +66,8 @@ celery_app.conf.update(
     # This is important for long-running tasks (document processing can take minutes)
 
     # Prevent tasks from being held in memory indefinitely
-    task_soft_time_limit=600,   # 10 minutes: trigger SoftTimeLimitExceeded
-    task_time_limit=720,        # 12 minutes: force kill if still running
+    task_soft_time_limit=3600,  # 60 minutes: trigger SoftTimeLimitExceeded
+    task_time_limit=3800,       # ~63 minutes: force kill if still running
 )
 
 # Auto-discover tasks in the app.tasks module

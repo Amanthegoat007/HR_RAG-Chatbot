@@ -47,7 +47,7 @@ COPY services/embed/requirements.txt .
 # CPU-only PyTorch — saves ~1.5 GB compared to CUDA version
 # Using index URL to get CPU-only wheel (not default from PyPI)
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+    pip install --default-timeout=30000 --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # ---------------------------------------------------------------------------
 # NOTE: Model pre-download removed from build step due to dependency conflicts.

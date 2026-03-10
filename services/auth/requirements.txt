@@ -13,7 +13,7 @@ python-jose[cryptography]==3.3.0
 # Password hashing — passlib with bcrypt backend
 # NOTE: passlib 1.7.4 is incompatible with bcrypt>=4.1 (internal API removed)
 passlib[bcrypt]==1.7.4
-bcrypt==4.0.1
+bcrypt==4.2.1              # Upgraded from 4.0.1 — security patches. DO NOT go above 4.3 (breaks passlib)
 
 # PostgreSQL async driver for audit log writes
 asyncpg==0.29.0

@@ -6,12 +6,12 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProviderComponent({ children }: ThemeProviderProps) {
-  // Get initial color scheme from localStorage or default to 'light'
+  // Get initial color scheme from localStorage or default to 'auto'
   const defaultColorScheme =
     (localStorage.getItem("mantine-color-scheme") as
       | "light"
       | "dark"
-      | "auto") || "light";
+      | "auto") || "auto";
 
   return (
     <MantineProvider theme={theme} defaultColorScheme={defaultColorScheme}>

@@ -45,18 +45,19 @@ export default function DocumentManagementPage() {
   useEffect(() => {
     fetchDocuments();
 
-    // Poll for updates if any document is processing or pending
+    // Poll for updates if any document is in a processing state
+    const IN_PROGRESS_STATUSES = ["pending", "processing", "normalizing", "embedding"];
     const interval = setInterval(() => {
       setDocuments((currentDocs) => {
         const needsUpdate = currentDocs.some(
-          (d) => d.status === "pending" || d.status === "processing",
+          (d) => IN_PROGRESS_STATUSES.includes(d.status),
         );
         if (needsUpdate) {
           fetchDocuments(false);
         }
         return currentDocs;
       });
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);

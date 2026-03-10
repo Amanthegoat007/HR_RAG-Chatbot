@@ -29,7 +29,7 @@ WORKDIR /app
 COPY services/rerank/requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+    pip install --default-timeout=30000 --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # NOTE: Model pre-download removed from build step due to dependency conflicts.
 # The BGE-Reranker model will auto-download on first container start.

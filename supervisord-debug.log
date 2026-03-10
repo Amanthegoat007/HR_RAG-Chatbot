@@ -1,0 +1,6 @@
+2026-03-04 21:39:26,377 INFO Set uid to user 0 succeeded
+2026-03-04 21:39:26,382 INFO supervisord started with pid 1
+2026-03-04 21:39:27,387 INFO spawned: 'fastapi' with pid 7
+2026-03-04 21:39:27,390 INFO spawned: 'llama_server' with pid 8
+2026-03-04 21:39:28,805 INFO success: fastapi entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-03-04 21:39:28,805 INFO success: llama_server entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

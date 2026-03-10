@@ -1,0 +1,895 @@
+nohup: ignoring input
+ Image hr-rag-chatbot-backend Building 
+ Image hr-rag-chatbot-rag-pipeline Building 
+ Image hr-rag-chatbot-monitoring Building 
+ Image hr-rag-chatbot-frontend Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.08kB done
+#1 DONE 0.0s
+
+#2 [rag-pipeline internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.23kB done
+#2 DONE 0.0s
+
+#3 [frontend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 479B done
+#3 DONE 0.0s
+
+#4 [backend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 1.08kB done
+#4 DONE 0.0s
+
+#5 [monitoring internal] load build definition from Dockerfile
+#5 transferring dockerfile: 1.15kB done
+#5 DONE 0.1s
+
+#6 [backend internal] load metadata for docker.io/library/python:3.11-slim
+#6 DONE 1.2s
+
+#7 [backend internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [rag-pipeline internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [frontend internal] load metadata for docker.io/library/nginx:alpine
+#9 DONE 1.2s
+
+#10 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#10 DONE 1.2s
+
+#11 [backend internal] load build context
+#11 transferring context: 934B 0.0s done
+#11 DONE 0.0s
+
+#12 [monitoring internal] load metadata for docker.io/library/alpine:3.19
+#12 DONE 1.3s
+
+#13 [frontend internal] load .dockerignore
+#13 transferring context: 87B 0.0s done
+#13 DONE 0.0s
+
+#14 [monitoring internal] load .dockerignore
+#14 transferring context: 2B done
+#14 DONE 0.0s
+
+#15 [monitoring internal] load build context
+#15 transferring context: 523B done
+#15 DONE 0.0s
+
+#16 [backend 1/8] FROM docker.io/library/python:3.11-slim@sha256:d6e4d224f70f9e0172a06a3a2eba2f768eb146811a349278b38fff3a36463b47
+#16 resolve docker.io/library/python:3.11-slim@sha256:d6e4d224f70f9e0172a06a3a2eba2f768eb146811a349278b38fff3a36463b47 0.1s done
+#16 DONE 0.1s
+
+#17 [frontend internal] load build context
+#17 transferring context: 9.50kB 0.0s done
+#17 DONE 0.1s
+
+#18 [rag-pipeline builder  3/10] RUN apt-get update && apt-get install -y     build-essential     cmake     git     wget     curl     supervisor     && rm -rf /var/lib/apt/lists/*
+#18 CACHED
+
+#19 [rag-pipeline builder  4/10] WORKDIR /llama.cpp
+#19 CACHED
+
+#20 [rag-pipeline stage-1 3/9] RUN apt-get update && apt-get install -y supervisor curl libgomp1 && rm -rf /var/lib/apt/lists/*
+#20 CACHED
+
+#21 [backend 4/8] RUN pip install --default-timeout=300 --no-cache-dir     torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#21 CACHED
+
+#22 [backend 2/8] WORKDIR /app
+#22 CACHED
+
+#23 [backend 6/8] RUN pip install --default-timeout=300 --no-cache-dir -r requirements.txt
+#23 CACHED
+
+#24 [backend 7/8] COPY . .
+#24 CACHED
+
+#25 [backend 3/8] RUN apt-get update && apt-get install -y     build-essential     curl     supervisor     && rm -rf /var/lib/apt/lists/*
+#25 CACHED
+
+#26 [backend 5/8] COPY requirements.txt .
+#26 CACHED
+
+#27 [backend 8/8] COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#27 CACHED
+
+#28 [rag-pipeline internal] load build context
+#28 ...
+
+#29 [frontend stage-1 1/3] FROM docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba
+#29 resolve docker.io/library/nginx:alpine@sha256:1d13701a5f9f3fb01aaa88cef2344d65b6b5bf6b7d9fa4cf0dca557a8d7702ba 0.1s done
+#29 DONE 0.1s
+
+#30 [frontend build 1/6] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#30 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.1s done
+#30 DONE 0.1s
+
+#31 [frontend build 5/6] COPY . .
+#31 CACHED
+
+#32 [frontend build 2/6] WORKDIR /app
+#32 CACHED
+
+#33 [frontend stage-1 2/3] COPY --from=build /app/dist /usr/share/nginx/html
+#33 CACHED
+
+#34 [frontend build 6/6] RUN npm run build
+#34 CACHED
+
+#35 [frontend build 4/6] RUN npm ci
+#35 CACHED
+
+#36 [frontend build 3/6] COPY package*.json ./
+#36 CACHED
+
+#37 [frontend stage-1 3/3] COPY nginx.conf /etc/nginx/nginx.conf
+#37 CACHED
+
+#38 [monitoring 1/7] FROM docker.io/library/alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1
+#38 resolve docker.io/library/alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1 0.1s done
+#38 DONE 0.1s
+
+#39 [monitoring 2/7] RUN apk add --no-cache supervisor prometheus grafana
+#39 CACHED
+
+#40 [monitoring 5/7] COPY prometheus/prometheus.yml /etc/prometheus/prometheus.yml
+#40 CACHED
+
+#41 [monitoring 3/7] RUN mkdir -p /var/log/supervisor /etc/prometheus /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards /var/lib/grafana/dashboards
+#41 CACHED
+
+#42 [monitoring 6/7] COPY grafana/grafana.ini /etc/grafana/grafana.ini
+#42 CACHED
+
+#43 [monitoring 4/7] COPY supervisord.conf /etc/supervisord.conf
+#43 CACHED
+
+#44 [monitoring 7/7] COPY grafana/provisioning/ /etc/grafana/provisioning/
+#44 CACHED
+
+#28 [rag-pipeline internal] load build context
+#28 ...
+
+#45 [monitoring] exporting to image
+#45 exporting layers 0.0s done
+#45 exporting manifest sha256:a07feb4ab7fa8e05d6c984851a7395a5b3c5da51c134e2b4f78a87dca6692ed7 done
+#45 exporting config sha256:d8d017e838d940fbd9cb9920e334da26f4acfdb1443616f28c810f2b46652156 0.0s done
+#45 exporting attestation manifest sha256:548ea297c9c7b7cacc713edc1bef474a88ae514322e851036b2a238a28dc617a 0.1s done
+#45 exporting manifest list sha256:c7206f6f525c307ffbe8b453755e9678e59e220f74616e672912a7a673f11830 0.0s done
+#45 naming to docker.io/library/hr-rag-chatbot-monitoring:latest 0.0s done
+#45 unpacking to docker.io/library/hr-rag-chatbot-monitoring:latest 0.0s done
+#45 DONE 0.4s
+
+#46 [backend] exporting to image
+#46 exporting layers 0.0s done
+#46 exporting manifest sha256:4931f4d75c3b8021dfeffb269e7550ece288e17b21a3024efd5d5866541f75b4 done
+#46 exporting config sha256:8a0a925376e390c0cc2c67a798d25aa1e745605274161a6f3b70e9c49fad1aa9 done
+#46 exporting attestation manifest sha256:34c0536cb02e1f8a257a0bc5a90022829ee8482f1530a514df0b9b907ed66813 0.1s done
+#46 exporting manifest list sha256:36309fd6dea91ff21118fa6a1d4a827fd5cf166539cae49c25a02ad15e8d130e 0.1s done
+#46 naming to docker.io/library/hr-rag-chatbot-backend:latest 0.0s done
+#46 unpacking to docker.io/library/hr-rag-chatbot-backend:latest 0.1s done
+#46 DONE 0.5s
+
+#47 [frontend] exporting to image
+#47 exporting layers 0.0s done
+#47 exporting manifest sha256:8aafbfb504f19856f173eb6b0049bba92aaa9a616464a07f0a00b73cd0930ad8 0.0s done
+#47 exporting config sha256:360274cc223e30081af37360214dc915f06f889066caa826e7a170911b1f1959 done
+#47 exporting attestation manifest sha256:cb45f103e2b2b0920c87df52d4a251211feb2e99d00d2eee3d698bd123d49757 0.1s done
+#47 exporting manifest list sha256:8929195264fa271c7fc5c44cba8d6a2f0df6a11b4ab6628d98a05852a209665f 0.1s done
+#47 naming to docker.io/library/hr-rag-chatbot-frontend:latest 0.0s done
+#47 unpacking to docker.io/library/hr-rag-chatbot-frontend:latest 0.1s done
+#47 DONE 0.5s
+
+#28 [rag-pipeline internal] load build context
+#28 ...
+
+#48 [monitoring] resolving provenance for metadata file
+#48 DONE 0.1s
+
+#49 [frontend] resolving provenance for metadata file
+#49 DONE 0.1s
+
+#50 [backend] resolving provenance for metadata file
+#50 DONE 0.0s
+
+#28 [rag-pipeline internal] load build context
+#28 transferring context: 283.87MB 5.1s
+#28 transferring context: 458.65MB 7.2s done
+#28 DONE 7.2s
+
+#51 [rag-pipeline builder  5/10] COPY llama.cpp/ .
+#51 DONE 1.7s
+
+#52 [rag-pipeline builder  6/10] RUN cmake -B build     && cmake --build build --config Release -j4 --target llama-server
+#52 0.512 -- The C compiler identification is GNU 14.2.0
+#52 0.624 -- The CXX compiler identification is GNU 14.2.0
+#52 0.646 -- Detecting C compiler ABI info
+#52 0.837 -- Detecting C compiler ABI info - done
+#52 0.865 -- Check for working C compiler: /usr/bin/cc - skipped
+#52 0.865 -- Detecting C compile features
+#52 0.866 -- Detecting C compile features - done
+#52 0.898 -- Detecting CXX compiler ABI info
+#52 1.091 -- Detecting CXX compiler ABI info - done
+#52 1.119 -- Check for working CXX compiler: /usr/bin/c++ - skipped
+#52 1.120 -- Detecting CXX compile features
+#52 1.122 -- Detecting CXX compile features - done
+#52 1.136 CMAKE_BUILD_TYPE=Release
+#52 1.146 -- Found Git: /usr/bin/git (found version "2.47.3")
+#52 1.449 -- The ASM compiler identification is GNU
+#52 1.456 -- Found assembler: /usr/bin/cc
+#52 1.489 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+#52 1.694 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+#52 1.699 -- Found Threads: TRUE
+#52 1.710 -- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+#52 1.747 -- CMAKE_SYSTEM_PROCESSOR: x86_64
+#52 1.747 -- GGML_SYSTEM_ARCH: x86
+#52 1.753 -- Including CPU backend
+#52 2.383 -- Found OpenMP_C: -fopenmp (found version "4.5")
+#52 2.598 -- Found OpenMP_CXX: -fopenmp (found version "4.5")
+#52 2.599 -- Found OpenMP: TRUE (found version "4.5")
+#52 2.599 -- x86 detected
+#52 2.599 -- Adding CPU backend variant ggml-cpu: -march=native 
+#52 2.616 -- ggml version: 0.9.7
+#52 2.616 -- ggml commit:  2cd20b72e-dirty
+#52 2.632 -- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
+#52 2.632 CMake Warning at vendor/cpp-httplib/CMakeLists.txt:150 (message):
+#52 2.632   OpenSSL not found, HTTPS support disabled
+#52 2.632 
+#52 2.632 
+#52 2.672 -- Generating embedded license file for target: common
+#52 2.679 -- Configuring done (2.3s)
+#52 2.934 -- Generating done (0.3s)
+#52 2.936 -- Build files have been written to: /llama.cpp/build
+#52 3.117 [  0%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+#52 3.117 [  0%] Building CXX object vendor/cpp-httplib/CMakeFiles/cpp-httplib.dir/httplib.cpp.o
+#52 3.119 [  0%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+#52 3.119 [  0%] Building CXX object common/CMakeFiles/build_info.dir/build-info.cpp.o
+#52 3.169 [  0%] Built target build_info
+#52 3.190 [  1%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+#52 3.429 [  1%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+#52 3.737 [  1%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+#52 4.858 [  1%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+#52 5.009 [  1%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+#52 5.059 [  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+#52 11.67 [  3%] Linking CXX shared library ../../bin/libggml-base.so
+#52 11.86 [  3%] Built target ggml-base
+#52 11.91 [  3%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+#52 11.91 [  3%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+#52 11.92 [  5%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+#52 13.13 [  5%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+#52 13.18 [  5%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+#52 13.21 [  5%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+#52 13.98 [  7%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+#52 14.74 [  7%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+#52 14.82 [  7%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+#52 15.66 [  7%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+#52 17.57 [  7%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+#52 18.48 [  9%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+#52 19.19 [  9%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+#52 19.35 [  9%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+#52 20.49 [  9%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+#52 24.03 [  9%] Linking CXX static library libcpp-httplib.a
+#52 24.13 [  9%] Built target cpp-httplib
+#52 29.17 [ 11%] Linking CXX shared library ../../bin/libggml-cpu.so
+#52 29.37 [ 11%] Built target ggml-cpu
+#52 29.43 [ 12%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+#52 29.43 [ 12%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+#52 31.01 [ 12%] Linking CXX shared library ../../bin/libggml.so
+#52 31.17 [ 12%] Built target ggml
+#52 31.24 [ 12%] Building CXX object src/CMakeFiles/llama.dir/llama.cpp.o
+#52 31.24 [ 12%] Building CXX object src/CMakeFiles/llama.dir/llama-adapter.cpp.o
+#52 31.24 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-batch.cpp.o
+#52 31.24 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-arch.cpp.o
+#52 32.23 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-chat.cpp.o
+#52 33.33 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-context.cpp.o
+#52 33.43 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-cparams.cpp.o
+#52 33.51 [ 14%] Building CXX object src/CMakeFiles/llama.dir/llama-grammar.cpp.o
+#52 33.99 [ 16%] Building CXX object src/CMakeFiles/llama.dir/llama-graph.cpp.o
+#52 34.72 [ 16%] Building CXX object src/CMakeFiles/llama.dir/llama-hparams.cpp.o
+#52 34.96 [ 16%] Building CXX object src/CMakeFiles/llama.dir/llama-impl.cpp.o
+#52 35.65 [ 16%] Building CXX object src/CMakeFiles/llama.dir/llama-io.cpp.o
+#52 35.89 [ 18%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache.cpp.o
+#52 37.11 [ 18%] Building CXX object src/CMakeFiles/llama.dir/llama-kv-cache-iswa.cpp.o
+#52 38.14 [ 18%] Building CXX object src/CMakeFiles/llama.dir/llama-memory.cpp.o
+#52 38.46 [ 18%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid.cpp.o
+#52 38.81 [ 20%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-hybrid-iswa.cpp.o
+#52 40.17 [ 20%] Building CXX object src/CMakeFiles/llama.dir/llama-memory-recurrent.cpp.o
+#52 40.60 [ 20%] Building CXX object src/CMakeFiles/llama.dir/llama-mmap.cpp.o
+#52 40.62 [ 20%] Building CXX object src/CMakeFiles/llama.dir/llama-model-loader.cpp.o
+#52 41.31 [ 20%] Building CXX object src/CMakeFiles/llama.dir/llama-model-saver.cpp.o
+#52 41.35 [ 22%] Building CXX object src/CMakeFiles/llama.dir/llama-model.cpp.o
+#52 42.19 [ 22%] Building CXX object src/CMakeFiles/llama.dir/llama-quant.cpp.o
+#52 42.25 [ 22%] Building CXX object src/CMakeFiles/llama.dir/llama-sampler.cpp.o
+#52 44.20 [ 22%] Building CXX object src/CMakeFiles/llama.dir/llama-vocab.cpp.o
+#52 48.99 [ 24%] Building CXX object src/CMakeFiles/llama.dir/unicode-data.cpp.o
+#52 49.86 [ 24%] Building CXX object src/CMakeFiles/llama.dir/unicode.cpp.o
+#52 49.93 [ 24%] Building CXX object src/CMakeFiles/llama.dir/models/afmoe.cpp.o
+#52 50.27 [ 24%] Building CXX object src/CMakeFiles/llama.dir/models/apertus.cpp.o
+#52 50.74 [ 25%] Building CXX object src/CMakeFiles/llama.dir/models/arcee.cpp.o
+#52 51.08 [ 25%] Building CXX object src/CMakeFiles/llama.dir/models/arctic.cpp.o
+#52 51.53 [ 25%] Building CXX object src/CMakeFiles/llama.dir/models/arwkv7.cpp.o
+#52 51.86 [ 25%] Building CXX object src/CMakeFiles/llama.dir/models/baichuan.cpp.o
+#52 52.29 [ 25%] Building CXX object src/CMakeFiles/llama.dir/models/bailingmoe.cpp.o
+#52 52.63 [ 27%] Building CXX object src/CMakeFiles/llama.dir/models/bailingmoe2.cpp.o
+#52 53.08 [ 27%] Building CXX object src/CMakeFiles/llama.dir/models/bert.cpp.o
+#52 53.42 [ 27%] Building CXX object src/CMakeFiles/llama.dir/models/bitnet.cpp.o
+#52 53.91 [ 27%] Building CXX object src/CMakeFiles/llama.dir/models/bloom.cpp.o
+#52 54.20 [ 29%] Building CXX object src/CMakeFiles/llama.dir/models/chameleon.cpp.o
+#52 54.68 [ 29%] Building CXX object src/CMakeFiles/llama.dir/models/chatglm.cpp.o
+#52 54.98 [ 29%] Building CXX object src/CMakeFiles/llama.dir/models/codeshell.cpp.o
+#52 55.47 [ 29%] Building CXX object src/CMakeFiles/llama.dir/models/cogvlm.cpp.o
+#52 55.77 [ 31%] Building CXX object src/CMakeFiles/llama.dir/models/cohere2-iswa.cpp.o
+#52 56.28 [ 31%] Building CXX object src/CMakeFiles/llama.dir/models/command-r.cpp.o
+#52 56.56 [ 31%] Building CXX object src/CMakeFiles/llama.dir/models/dbrx.cpp.o
+#52 57.11 [ 31%] Building CXX object src/CMakeFiles/llama.dir/models/deci.cpp.o
+#52 57.35 [ 33%] Building CXX object src/CMakeFiles/llama.dir/models/deepseek.cpp.o
+#52 57.94 [ 33%] Building CXX object src/CMakeFiles/llama.dir/models/deepseek2.cpp.o
+#52 58.18 [ 33%] Building CXX object src/CMakeFiles/llama.dir/models/delta-net-base.cpp.o
+#52 58.80 [ 33%] Building CXX object src/CMakeFiles/llama.dir/models/dots1.cpp.o
+#52 59.04 [ 33%] Building CXX object src/CMakeFiles/llama.dir/models/dream.cpp.o
+#52 59.21 [ 35%] Building CXX object src/CMakeFiles/llama.dir/models/ernie4-5-moe.cpp.o
+#52 59.62 [ 35%] Building CXX object src/CMakeFiles/llama.dir/models/ernie4-5.cpp.o
+#52 59.83 [ 35%] Building CXX object src/CMakeFiles/llama.dir/models/eurobert.cpp.o
+#52 60.00 [ 35%] Building CXX object src/CMakeFiles/llama.dir/models/exaone-moe.cpp.o
+#52 60.39 [ 37%] Building CXX object src/CMakeFiles/llama.dir/models/exaone.cpp.o
+#52 60.64 [ 37%] Building CXX object src/CMakeFiles/llama.dir/models/exaone4.cpp.o
+#52 60.88 [ 37%] Building CXX object src/CMakeFiles/llama.dir/models/falcon-h1.cpp.o
+#52 61.17 [ 37%] Building CXX object src/CMakeFiles/llama.dir/models/falcon.cpp.o
+#52 61.46 [ 38%] Building CXX object src/CMakeFiles/llama.dir/models/gemma-embedding.cpp.o
+#52 61.69 [ 38%] Building CXX object src/CMakeFiles/llama.dir/models/gemma.cpp.o
+#52 61.93 [ 38%] Building CXX object src/CMakeFiles/llama.dir/models/gemma2-iswa.cpp.o
+#52 62.24 [ 38%] Building CXX object src/CMakeFiles/llama.dir/models/gemma3.cpp.o
+#52 62.48 [ 38%] Building CXX object src/CMakeFiles/llama.dir/models/gemma3n-iswa.cpp.o
+#52 62.72 [ 40%] Building CXX object src/CMakeFiles/llama.dir/models/glm4-moe.cpp.o
+#52 63.15 [ 40%] Building CXX object src/CMakeFiles/llama.dir/models/glm4.cpp.o
+#52 63.42 [ 40%] Building CXX object src/CMakeFiles/llama.dir/models/gpt2.cpp.o
+#52 63.57 [ 40%] Building CXX object src/CMakeFiles/llama.dir/models/gptneox.cpp.o
+#52 63.99 [ 42%] Building CXX object src/CMakeFiles/llama.dir/models/granite-hybrid.cpp.o
+#52 64.21 [ 42%] Building CXX object src/CMakeFiles/llama.dir/models/granite.cpp.o
+#52 64.40 [ 42%] Building CXX object src/CMakeFiles/llama.dir/models/grok.cpp.o
+#52 64.79 [ 42%] Building CXX object src/CMakeFiles/llama.dir/models/grovemoe.cpp.o
+#52 65.01 [ 44%] Building CXX object src/CMakeFiles/llama.dir/models/hunyuan-dense.cpp.o
+#52 65.20 [ 44%] Building CXX object src/CMakeFiles/llama.dir/models/hunyuan-moe.cpp.o
+#52 65.60 [ 44%] Building CXX object src/CMakeFiles/llama.dir/models/internlm2.cpp.o
+#52 65.82 [ 44%] Building CXX object src/CMakeFiles/llama.dir/models/jais.cpp.o
+#52 66.01 [ 44%] Building CXX object src/CMakeFiles/llama.dir/models/jais2.cpp.o
+#52 66.39 [ 46%] Building CXX object src/CMakeFiles/llama.dir/models/jamba.cpp.o
+#52 66.62 [ 46%] Building CXX object src/CMakeFiles/llama.dir/models/kimi-linear.cpp.o
+#52 66.81 [ 46%] Building CXX object src/CMakeFiles/llama.dir/models/lfm2.cpp.o
+#52 67.18 [ 46%] Building CXX object src/CMakeFiles/llama.dir/models/llada-moe.cpp.o
+#52 67.61 [ 48%] Building CXX object src/CMakeFiles/llama.dir/models/llada.cpp.o
+#52 67.89 [ 48%] Building CXX object src/CMakeFiles/llama.dir/models/llama-iswa.cpp.o
+#52 67.96 [ 48%] Building CXX object src/CMakeFiles/llama.dir/models/llama.cpp.o
+#52 68.41 [ 48%] Building CXX object src/CMakeFiles/llama.dir/models/maincoder.cpp.o
+#52 68.73 [ 50%] Building CXX object src/CMakeFiles/llama.dir/models/mamba-base.cpp.o
+#52 68.78 [ 50%] Building CXX object src/CMakeFiles/llama.dir/models/mamba.cpp.o
+#52 68.81 [ 50%] Building CXX object src/CMakeFiles/llama.dir/models/mimo2-iswa.cpp.o
+#52 69.23 [ 50%] Building CXX object src/CMakeFiles/llama.dir/models/minicpm3.cpp.o
+#52 69.54 [ 50%] Building CXX object src/CMakeFiles/llama.dir/models/minimax-m2.cpp.o
+#52 69.64 [ 51%] Building CXX object src/CMakeFiles/llama.dir/models/mistral3.cpp.o
+#52 69.65 [ 51%] Building CXX object src/CMakeFiles/llama.dir/models/modern-bert.cpp.o
+#52 70.05 [ 51%] Building CXX object src/CMakeFiles/llama.dir/models/mpt.cpp.o
+#52 70.32 [ 51%] Building CXX object src/CMakeFiles/llama.dir/models/nemotron-h.cpp.o
+#52 70.44 [ 53%] Building CXX object src/CMakeFiles/llama.dir/models/nemotron.cpp.o
+#52 70.48 [ 53%] Building CXX object src/CMakeFiles/llama.dir/models/neo-bert.cpp.o
+#52 70.85 [ 53%] Building CXX object src/CMakeFiles/llama.dir/models/olmo.cpp.o
+#52 71.13 [ 53%] Building CXX object src/CMakeFiles/llama.dir/models/olmo2.cpp.o
+#52 71.21 [ 55%] Building CXX object src/CMakeFiles/llama.dir/models/olmoe.cpp.o
+#52 71.25 [ 55%] Building CXX object src/CMakeFiles/llama.dir/models/openai-moe-iswa.cpp.o
+#52 71.63 [ 55%] Building CXX object src/CMakeFiles/llama.dir/models/openelm.cpp.o
+#52 71.96 [ 55%] Building CXX object src/CMakeFiles/llama.dir/models/orion.cpp.o
+#52 71.98 [ 55%] Building CXX object src/CMakeFiles/llama.dir/models/paddleocr.cpp.o
+#52 72.05 [ 57%] Building CXX object src/CMakeFiles/llama.dir/models/pangu-embedded.cpp.o
+#52 72.40 [ 57%] Building CXX object src/CMakeFiles/llama.dir/models/phi2.cpp.o
+#52 72.73 [ 57%] Building CXX object src/CMakeFiles/llama.dir/models/phi3.cpp.o
+#52 72.78 [ 57%] Building CXX object src/CMakeFiles/llama.dir/models/plamo.cpp.o
+#52 72.83 [ 59%] Building CXX object src/CMakeFiles/llama.dir/models/plamo2.cpp.o
+#52 73.22 [ 59%] Building CXX object src/CMakeFiles/llama.dir/models/plamo3.cpp.o
+#52 73.59 [ 59%] Building CXX object src/CMakeFiles/llama.dir/models/plm.cpp.o
+#52 73.60 [ 59%] Building CXX object src/CMakeFiles/llama.dir/models/qwen.cpp.o
+#52 73.73 [ 61%] Building CXX object src/CMakeFiles/llama.dir/models/qwen2.cpp.o
+#52 74.05 [ 61%] Building CXX object src/CMakeFiles/llama.dir/models/qwen2moe.cpp.o
+#52 74.38 [ 61%] Building CXX object src/CMakeFiles/llama.dir/models/qwen2vl.cpp.o
+#52 74.40 [ 61%] Building CXX object src/CMakeFiles/llama.dir/models/qwen3.cpp.o
+#52 74.50 [ 61%] Building CXX object src/CMakeFiles/llama.dir/models/qwen35.cpp.o
+#52 74.85 [ 62%] Building CXX object src/CMakeFiles/llama.dir/models/qwen35moe.cpp.o
+#52 75.17 [ 62%] Building CXX object src/CMakeFiles/llama.dir/models/qwen3moe.cpp.o
+#52 75.19 [ 62%] Building CXX object src/CMakeFiles/llama.dir/models/qwen3next.cpp.o
+#52 75.43 [ 62%] Building CXX object src/CMakeFiles/llama.dir/models/qwen3vl-moe.cpp.o
+#52 75.74 [ 64%] Building CXX object src/CMakeFiles/llama.dir/models/qwen3vl.cpp.o
+#52 75.94 [ 64%] Building CXX object src/CMakeFiles/llama.dir/models/refact.cpp.o
+#52 76.09 [ 64%] Building CXX object src/CMakeFiles/llama.dir/models/rnd1.cpp.o
+#52 76.22 [ 64%] Building CXX object src/CMakeFiles/llama.dir/models/rwkv6-base.cpp.o
+#52 76.55 [ 66%] Building CXX object src/CMakeFiles/llama.dir/models/rwkv6.cpp.o
+#52 76.71 [ 66%] Building CXX object src/CMakeFiles/llama.dir/models/rwkv6qwen2.cpp.o
+#52 76.86 [ 66%] Building CXX object src/CMakeFiles/llama.dir/models/rwkv7-base.cpp.o
+#52 77.03 [ 66%] Building CXX object src/CMakeFiles/llama.dir/models/rwkv7.cpp.o
+#52 77.38 [ 66%] Building CXX object src/CMakeFiles/llama.dir/models/seed-oss.cpp.o
+#52 77.48 [ 68%] Building CXX object src/CMakeFiles/llama.dir/models/smallthinker.cpp.o
+#52 77.70 [ 68%] Building CXX object src/CMakeFiles/llama.dir/models/smollm3.cpp.o
+#52 77.82 [ 68%] Building CXX object src/CMakeFiles/llama.dir/models/stablelm.cpp.o
+#52 78.22 [ 68%] Building CXX object src/CMakeFiles/llama.dir/models/starcoder.cpp.o
+#52 78.36 [ 70%] Building CXX object src/CMakeFiles/llama.dir/models/starcoder2.cpp.o
+#52 78.54 [ 70%] Building CXX object src/CMakeFiles/llama.dir/models/step35-iswa.cpp.o
+#52 78.63 [ 70%] Building CXX object src/CMakeFiles/llama.dir/models/t5-dec.cpp.o
+#52 79.04 [ 70%] Building CXX object src/CMakeFiles/llama.dir/models/t5-enc.cpp.o
+#52 79.15 [ 72%] Building CXX object src/CMakeFiles/llama.dir/models/wavtokenizer-dec.cpp.o
+#52 79.36 [ 72%] Building CXX object src/CMakeFiles/llama.dir/models/xverse.cpp.o
+#52 80.12 [ 72%] Linking CXX shared library ../bin/libllama.so
+#52 80.41 [ 72%] Built target llama
+#52 80.46 [ 72%] Building CXX object common/CMakeFiles/common.dir/arg.cpp.o
+#52 80.46 [ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd.cpp.o
+#52 80.46 [ 72%] Building CXX object common/CMakeFiles/common.dir/chat-parser-xml-toolcall.cpp.o
+#52 80.46 [ 72%] Building CXX object common/CMakeFiles/common.dir/chat-parser.cpp.o
+#52 83.39 [ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-audio.cpp.o
+#52 85.23 [ 72%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/mtmd-helper.cpp.o
+#52 87.47 [ 74%] Building CXX object common/CMakeFiles/common.dir/chat-peg-parser.cpp.o
+#52 90.34 [ 74%] Building CXX object common/CMakeFiles/common.dir/chat.cpp.o
+#52 92.08 [ 74%] Building CXX object common/CMakeFiles/common.dir/common.cpp.o
+#52 98.30 [ 74%] Building CXX object common/CMakeFiles/common.dir/console.cpp.o
+#52 98.88 [ 75%] Building CXX object common/CMakeFiles/common.dir/debug.cpp.o
+#52 99.68 [ 75%] Building CXX object common/CMakeFiles/common.dir/download.cpp.o
+#52 100.3 [ 77%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/clip.cpp.o
+#52 100.4 [ 77%] Building CXX object common/CMakeFiles/common.dir/json-partial.cpp.o
+#52 105.3 [ 77%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/cogvlm.cpp.o
+#52 106.1 [ 77%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/conformer.cpp.o
+#52 107.0 [ 77%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/glm4v.cpp.o
+#52 107.8 [ 79%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/internvl.cpp.o
+#52 108.1 [ 79%] Building CXX object common/CMakeFiles/common.dir/json-schema-to-grammar.cpp.o
+#52 108.6 [ 79%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimivl.cpp.o
+#52 108.9 [ 81%] Building CXX object common/CMakeFiles/common.dir/llguidance.cpp.o
+#52 109.2 [ 81%] Building CXX object common/CMakeFiles/common.dir/log.cpp.o
+#52 109.4 [ 81%] Building CXX object common/CMakeFiles/common.dir/ngram-cache.cpp.o
+#52 109.4 [ 81%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/kimik25.cpp.o
+#52 110.0 [ 81%] Building CXX object common/CMakeFiles/common.dir/ngram-map.cpp.o
+#52 110.2 [ 81%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/nemotron-v2-vl.cpp.o
+#52 110.6 [ 81%] Building CXX object common/CMakeFiles/common.dir/ngram-mod.cpp.o
+#52 110.8 [ 83%] Building CXX object common/CMakeFiles/common.dir/peg-parser.cpp.o
+#52 110.9 [ 83%] Building CXX object common/CMakeFiles/common.dir/preset.cpp.o
+#52 111.1 [ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llama4.cpp.o
+#52 111.9 [ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/llava.cpp.o
+#52 112.9 [ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/minicpmv.cpp.o
+#52 113.7 [ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/paddleocr.cpp.o
+#52 114.5 [ 85%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/pixtral.cpp.o
+#52 114.5 [ 85%] Building CXX object common/CMakeFiles/common.dir/regex-partial.cpp.o
+#52 115.3 [ 87%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen2vl.cpp.o
+#52 116.1 [ 87%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/qwen3vl.cpp.o
+#52 117.0 [ 87%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/siglip.cpp.o
+#52 117.8 [ 87%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/whisper-enc.cpp.o
+#52 118.1 [ 87%] Building CXX object common/CMakeFiles/common.dir/sampling.cpp.o
+#52 118.4 [ 88%] Building CXX object common/CMakeFiles/common.dir/speculative.cpp.o
+#52 118.6 [ 90%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/mobilenetv5.cpp.o
+#52 119.5 [ 90%] Building CXX object tools/mtmd/CMakeFiles/mtmd.dir/models/youtuvl.cpp.o
+#52 120.0 [ 90%] Building CXX object common/CMakeFiles/common.dir/unicode.cpp.o
+#52 120.1 [ 90%] Building CXX object common/CMakeFiles/common.dir/jinja/lexer.cpp.o
+#52 120.1 [ 90%] Linking CXX shared library ../../bin/libmtmd.so
+#52 120.3 [ 90%] Built target mtmd
+#52 120.3 [ 90%] Building CXX object common/CMakeFiles/common.dir/jinja/parser.cpp.o
+#52 121.0 [ 92%] Building CXX object common/CMakeFiles/common.dir/jinja/runtime.cpp.o
+#52 121.5 [ 92%] Building CXX object common/CMakeFiles/common.dir/jinja/value.cpp.o
+#52 123.4 [ 92%] Building CXX object common/CMakeFiles/common.dir/jinja/string.cpp.o
+#52 124.5 [ 92%] Building CXX object common/CMakeFiles/common.dir/jinja/caps.cpp.o
+#52 124.7 [ 92%] Building CXX object common/CMakeFiles/common.dir/__/license.cpp.o
+#52 129.0 [ 94%] Linking CXX static library libcommon.a
+#52 129.2 [ 94%] Built target common
+#52 129.2 [ 94%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-task.cpp.o
+#52 129.2 [ 96%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-queue.cpp.o
+#52 129.2 [ 96%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-common.cpp.o
+#52 129.2 [ 96%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-context.cpp.o
+#52 146.4 [ 96%] Linking CXX static library libserver-context.a
+#52 146.5 [ 96%] Built target server-context
+#52 146.5 [ 98%] Generating loading.html.hpp
+#52 146.5 [ 98%] Generating index.html.gz.hpp
+#52 148.2 [ 98%] Building CXX object tools/server/CMakeFiles/llama-server.dir/server.cpp.o
+#52 148.2 [ 98%] Building CXX object tools/server/CMakeFiles/llama-server.dir/server-http.cpp.o
+#52 148.2 [ 98%] Building CXX object tools/server/CMakeFiles/llama-server.dir/server-models.cpp.o
+#52 158.0 [100%] Linking CXX executable ../../bin/llama-server
+#52 158.2 [100%] Built target llama-server
+#52 DONE 158.3s
+
+#53 [rag-pipeline builder  7/10] WORKDIR /app
+#53 DONE 0.1s
+
+#54 [rag-pipeline builder  8/10] RUN pip install --default-timeout=300 --no-cache-dir     torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#54 1.960 Looking in indexes: https://download.pytorch.org/whl/cpu
+#54 3.650 Collecting torch
+#54 3.665   Downloading https://download.pytorch.org/whl/cpu/torch-2.10.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (29 kB)
+#54 4.962 Collecting torchvision
+#54 4.978   Downloading https://download.pytorch.org/whl/cpu/torchvision-0.25.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (5.4 kB)
+#54 5.843 Collecting filelock (from torch)
+#54 6.124   Downloading filelock-3.20.0-py3-none-any.whl.metadata (2.1 kB)
+#54 6.768 Collecting typing-extensions>=4.10.0 (from torch)
+#54 6.783   Downloading https://download.pytorch.org/whl/typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+#54 7.627 Collecting sympy>=1.13.3 (from torch)
+#54 7.640   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+#54 8.688 Collecting networkx>=2.5.1 (from torch)
+#54 8.699   Downloading networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)
+#54 9.338 Collecting jinja2 (from torch)
+#54 9.352   Downloading https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#54 10.21 Collecting fsspec>=0.8.5 (from torch)
+#54 10.22   Downloading fsspec-2025.12.0-py3-none-any.whl.metadata (10 kB)
+#54 12.30 Collecting numpy (from torchvision)
+#54 12.31   Downloading numpy-2.3.5-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+#54 12.33      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.1/62.1 kB 6.5 MB/s eta 0:00:00
+#54 14.21 Collecting pillow!=8.3.*,>=5.3.0 (from torchvision)
+#54 14.24   Downloading pillow-12.0.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.8 kB)
+#54 14.99 Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch)
+#54 15.00   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+#54 15.85 Collecting MarkupSafe>=2.0 (from jinja2->torch)
+#54 15.86   Downloading https://download.pytorch.org/whl/MarkupSafe-3.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.0 kB)
+#54 15.91 Downloading https://download.pytorch.org/whl/cpu/torch-2.10.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl (188.8 MB)
+#54 18.37    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 188.8/188.8 MB 86.8 MB/s eta 0:00:00
+#54 18.39 Downloading https://download.pytorch.org/whl/cpu/torchvision-0.25.0%2Bcpu-cp311-cp311-manylinux_2_28_x86_64.whl (1.9 MB)
+#54 18.42    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 74.0 MB/s eta 0:00:00
+#54 18.43 Downloading fsspec-2025.12.0-py3-none-any.whl (201 kB)
+#54 18.44    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 201.4/201.4 kB 27.5 MB/s eta 0:00:00
+#54 18.46 Downloading networkx-3.6.1-py3-none-any.whl (2.1 MB)
+#54 18.49    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 68.4 MB/s eta 0:00:00
+#54 18.51 Downloading pillow-12.0.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.0 MB)
+#54 18.60    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.0/7.0 MB 81.1 MB/s eta 0:00:00
+#54 18.62 Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+#54 18.70    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 82.5 MB/s eta 0:00:00
+#54 18.72 Downloading https://download.pytorch.org/whl/typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+#54 18.73    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 44.6/44.6 kB 30.8 MB/s eta 0:00:00
+#54 18.74 Downloading filelock-3.20.0-py3-none-any.whl (16 kB)
+#54 18.76 Downloading https://download.pytorch.org/whl/jinja2-3.1.6-py3-none-any.whl (134 kB)
+#54 18.77    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 38.6 MB/s eta 0:00:00
+#54 18.78 Downloading numpy-2.3.5-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+#54 19.01    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 80.7 MB/s eta 0:00:00
+#54 19.03 Downloading https://download.pytorch.org/whl/MarkupSafe-3.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (23 kB)
+#54 19.08 Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+#54 19.10    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 52.3 MB/s eta 0:00:00
+#54 20.26 Installing collected packages: mpmath, typing-extensions, sympy, pillow, numpy, networkx, MarkupSafe, fsspec, filelock, jinja2, torch, torchvision
+#54 43.88 Successfully installed MarkupSafe-3.0.2 filelock-3.20.0 fsspec-2025.12.0 jinja2-3.1.6 mpmath-1.3.0 networkx-3.6.1 numpy-2.3.5 pillow-12.0.0 sympy-1.14.0 torch-2.10.0+cpu torchvision-0.25.0+cpu typing-extensions-4.15.0
+#54 43.88 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#54 DONE 46.9s
+
+#55 [rag-pipeline builder  9/10] COPY requirements.txt .
+#55 DONE 0.2s
+
+#56 [rag-pipeline builder 10/10] RUN pip install --default-timeout=300 --no-cache-dir -r requirements.txt
+#56 0.984 Collecting fastapi>=0.111.0 (from -r requirements.txt (line 1))
+#56 1.693   Downloading fastapi-0.135.1-py3-none-any.whl.metadata (30 kB)
+#56 1.896 Collecting uvicorn>=0.30.1 (from -r requirements.txt (line 2))
+#56 1.909   Downloading uvicorn-0.41.0-py3-none-any.whl.metadata (6.7 kB)
+#56 2.407 Collecting pydantic>=2.7.4 (from -r requirements.txt (line 3))
+#56 2.419   Downloading pydantic-2.12.5-py3-none-any.whl.metadata (90 kB)
+#56 3.274      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.6/90.6 kB 145.3 kB/s eta 0:00:00
+#56 3.335 Collecting pydantic-settings>=2.3.4 (from -r requirements.txt (line 4))
+#56 3.352   Downloading pydantic_settings-2.13.1-py3-none-any.whl.metadata (3.4 kB)
+#56 3.421 Collecting httpx>=0.27.0 (from -r requirements.txt (line 5))
+#56 3.433   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+#56 3.532 Collecting redis>=5.0.7 (from -r requirements.txt (line 6))
+#56 3.545   Downloading redis-7.2.1-py3-none-any.whl.metadata (12 kB)
+#56 3.944 Collecting qdrant-client>=1.9.1 (from -r requirements.txt (line 7))
+#56 3.957   Downloading qdrant_client-1.17.0-py3-none-any.whl.metadata (11 kB)
+#56 4.041 Collecting sse-starlette>=2.1.2 (from -r requirements.txt (line 8))
+#56 4.053   Downloading sse_starlette-3.3.2-py3-none-any.whl.metadata (14 kB)
+#56 4.581 Collecting prometheus-fastapi-instrumentator>=7.0.0 (from -r requirements.txt (line 9))
+#56 4.595   Downloading prometheus_fastapi_instrumentator-7.1.0-py3-none-any.whl.metadata (13 kB)
+#56 4.673 Collecting tenacity>=8.2.0 (from -r requirements.txt (line 10))
+#56 4.685   Downloading tenacity-9.1.4-py3-none-any.whl.metadata (1.2 kB)
+#56 4.921 Collecting supervisor>=4.2.5 (from -r requirements.txt (line 11))
+#56 4.937   Downloading supervisor-4.3.0-py2.py3-none-any.whl.metadata (87 kB)
+#56 5.696      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.9/87.9 kB 160.0 kB/s eta 0:00:00
+#56 5.928 Collecting FlagEmbedding==1.2.10 (from -r requirements.txt (line 14))
+#56 6.134   Downloading FlagEmbedding-1.2.10.tar.gz (141 kB)
+#56 7.420      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 141.3/141.3 kB 105.6 kB/s eta 0:00:00
+#56 7.466   Preparing metadata (setup.py): started
+#56 7.895   Preparing metadata (setup.py): finished with status 'done'
+#56 7.952 Collecting sentence-transformers>=2.2.0 (from -r requirements.txt (line 15))
+#56 7.965   Downloading sentence_transformers-5.2.3-py3-none-any.whl.metadata (16 kB)
+#56 8.059 Requirement already satisfied: torch>=1.6.0 in /usr/local/lib/python3.11/site-packages (from FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (2.10.0+cpu)
+#56 8.151 Collecting transformers>=4.33.0 (from FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 8.163   Downloading transformers-5.3.0-py3-none-any.whl.metadata (32 kB)
+#56 8.588 Collecting datasets (from FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 8.600   Downloading datasets-4.6.1-py3-none-any.whl.metadata (19 kB)
+#56 8.788 Collecting accelerate>=0.20.1 (from FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 8.801   Downloading accelerate-1.13.0-py3-none-any.whl.metadata (19 kB)
+#56 9.042 Collecting starlette>=0.46.0 (from fastapi>=0.111.0->-r requirements.txt (line 1))
+#56 9.054   Downloading starlette-0.52.1-py3-none-any.whl.metadata (6.3 kB)
+#56 9.093 Requirement already satisfied: typing-extensions>=4.8.0 in /usr/local/lib/python3.11/site-packages (from fastapi>=0.111.0->-r requirements.txt (line 1)) (4.15.0)
+#56 9.127 Collecting typing-inspection>=0.4.2 (from fastapi>=0.111.0->-r requirements.txt (line 1))
+#56 9.139   Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+#56 9.227 Collecting annotated-doc>=0.0.2 (from fastapi>=0.111.0->-r requirements.txt (line 1))
+#56 9.239   Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+#56 9.330 Collecting click>=7.0 (from uvicorn>=0.30.1->-r requirements.txt (line 2))
+#56 9.342   Downloading click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+#56 9.400 Collecting h11>=0.8 (from uvicorn>=0.30.1->-r requirements.txt (line 2))
+#56 9.413   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#56 9.556 Collecting annotated-types>=0.6.0 (from pydantic>=2.7.4->-r requirements.txt (line 3))
+#56 9.570   Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+#56 10.46 Collecting pydantic-core==2.41.5 (from pydantic>=2.7.4->-r requirements.txt (line 3))
+#56 10.48   Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+#56 10.57 Collecting python-dotenv>=0.21.0 (from pydantic-settings>=2.3.4->-r requirements.txt (line 4))
+#56 10.58   Downloading python_dotenv-1.2.2-py3-none-any.whl.metadata (27 kB)
+#56 10.84 Collecting anyio (from httpx>=0.27.0->-r requirements.txt (line 5))
+#56 10.85   Downloading anyio-4.12.1-py3-none-any.whl.metadata (4.3 kB)
+#56 10.92 Collecting certifi (from httpx>=0.27.0->-r requirements.txt (line 5))
+#56 10.93   Downloading certifi-2026.2.25-py3-none-any.whl.metadata (2.5 kB)
+#56 10.99 Collecting httpcore==1.* (from httpx>=0.27.0->-r requirements.txt (line 5))
+#56 11.01   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+#56 11.16 Collecting idna (from httpx>=0.27.0->-r requirements.txt (line 5))
+#56 11.17   Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+#56 11.91 Collecting grpcio>=1.41.0 (from qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 11.93   Downloading grpcio-1.78.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.8 kB)
+#56 11.96 Requirement already satisfied: numpy>=1.21 in /usr/local/lib/python3.11/site-packages (from qdrant-client>=1.9.1->-r requirements.txt (line 7)) (2.3.5)
+#56 12.01 Collecting portalocker<4.0,>=2.7.0 (from qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 12.02   Downloading portalocker-3.2.0-py3-none-any.whl.metadata (8.7 kB)
+#56 12.27 Collecting protobuf>=3.20.0 (from qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 12.28   Downloading protobuf-7.34.0-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+#56 12.41 Collecting urllib3<3,>=1.26.14 (from qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 12.42   Downloading urllib3-2.6.3-py3-none-any.whl.metadata (6.9 kB)
+#56 12.55 Collecting prometheus-client<1.0.0,>=0.8.0 (from prometheus-fastapi-instrumentator>=7.0.0->-r requirements.txt (line 9))
+#56 12.56   Downloading prometheus_client-0.24.1-py3-none-any.whl.metadata (2.1 kB)
+#56 12.73 Collecting huggingface-hub>=0.20.0 (from sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 12.74   Downloading huggingface_hub-1.5.0-py3-none-any.whl.metadata (13 kB)
+#56 13.02 Collecting scikit-learn (from sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 13.05   Downloading scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+#56 13.25 Collecting scipy (from sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 13.30   Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+#56 13.76      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.1/62.1 kB 124.6 kB/s eta 0:00:00
+#56 13.85 Collecting tqdm (from sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 13.90   Downloading tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+#56 14.37      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.7/57.7 kB 113.0 kB/s eta 0:00:00
+#56 14.48 Collecting packaging>=20.0 (from accelerate>=0.20.1->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 14.49   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+#56 14.62 Collecting psutil (from accelerate>=0.20.1->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 14.64   Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl.metadata (22 kB)
+#56 14.80 Collecting pyyaml (from accelerate>=0.20.1->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 14.81   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#56 14.99 Collecting safetensors>=0.4.3 (from accelerate>=0.20.1->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 15.05   Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+#56 15.15 Collecting h2<5,>=3 (from httpx[http2]>=0.20.0->qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 15.16   Downloading h2-4.3.0-py3-none-any.whl.metadata (5.1 kB)
+#56 15.25 Requirement already satisfied: filelock>=3.10.0 in /usr/local/lib/python3.11/site-packages (from huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15)) (3.20.0)
+#56 15.25 Requirement already satisfied: fsspec>=2023.5.0 in /usr/local/lib/python3.11/site-packages (from huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15)) (2025.12.0)
+#56 15.34 Collecting hf-xet<2.0.0,>=1.2.0 (from huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 15.35   Downloading hf_xet-1.3.2-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+#56 15.45 Collecting typer (from huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 15.46   Downloading typer-0.24.1-py3-none-any.whl.metadata (16 kB)
+#56 15.61 Requirement already satisfied: sympy>=1.13.3 in /usr/local/lib/python3.11/site-packages (from torch>=1.6.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (1.14.0)
+#56 15.62 Requirement already satisfied: networkx>=2.5.1 in /usr/local/lib/python3.11/site-packages (from torch>=1.6.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (3.6.1)
+#56 15.62 Requirement already satisfied: jinja2 in /usr/local/lib/python3.11/site-packages (from torch>=1.6.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (3.1.6)
+#56 16.36 Collecting regex!=2019.12.17 (from transformers>=4.33.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 16.37   Downloading regex-2026.2.28-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+#56 16.51      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 40.4/40.4 kB 275.9 kB/s eta 0:00:00
+#56 16.71 Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers>=4.33.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 16.73   Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+#56 17.04 Collecting pyarrow>=21.0.0 (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 17.05   Downloading pyarrow-23.0.1-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.1 kB)
+#56 17.11 Collecting dill<0.4.1,>=0.3.0 (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 17.12   Downloading dill-0.4.0-py3-none-any.whl.metadata (10 kB)
+#56 17.47 Collecting pandas (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 17.49   Downloading pandas-3.0.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+#56 18.04      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 79.5/79.5 kB 142.3 kB/s eta 0:00:00
+#56 18.12 Collecting requests>=2.32.2 (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 18.37   Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+#56 18.51 Collecting xxhash (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 18.53   Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+#56 18.63 Collecting multiprocess<0.70.19 (from datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 18.64   Downloading multiprocess-0.70.18-py311-none-any.whl.metadata (7.5 kB)
+#56 18.83 Collecting joblib>=1.3.0 (from scikit-learn->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 18.84   Downloading joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+#56 18.90 Collecting threadpoolctl>=3.2.0 (from scikit-learn->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 18.92   Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+#56 19.90 Collecting aiohttp!=4.0.0a0,!=4.0.0a1 (from fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 19.94   Downloading aiohttp-3.13.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+#56 20.02 Collecting hyperframe<7,>=6.1 (from h2<5,>=3->httpx[http2]>=0.20.0->qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 20.03   Downloading hyperframe-6.1.0-py3-none-any.whl.metadata (4.3 kB)
+#56 20.09 Collecting hpack<5,>=4.1 (from h2<5,>=3->httpx[http2]>=0.20.0->qdrant-client>=1.9.1->-r requirements.txt (line 7))
+#56 20.10   Downloading hpack-4.1.0-py3-none-any.whl.metadata (4.6 kB)
+#56 20.34 Collecting charset_normalizer<4,>=2 (from requests>=2.32.2->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 20.35   Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+#56 20.78 Requirement already satisfied: mpmath<1.4,>=1.1.0 in /usr/local/lib/python3.11/site-packages (from sympy>=1.13.3->torch>=1.6.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (1.3.0)
+#56 20.84 Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.11/site-packages (from jinja2->torch>=1.6.0->FlagEmbedding==1.2.10->-r requirements.txt (line 14)) (3.0.2)
+#56 20.94 Collecting python-dateutil>=2.8.2 (from pandas->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 20.95   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+#56 21.08 Collecting shellingham>=1.3.0 (from typer->huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 21.09   Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+#56 21.20 Collecting rich>=12.3.0 (from typer->huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 21.25   Downloading rich-14.3.3-py3-none-any.whl.metadata (18 kB)
+#56 21.40 Collecting aiohappyeyeballs>=2.5.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 21.41   Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+#56 21.49 Collecting aiosignal>=1.4.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 21.50   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+#56 21.56 Collecting attrs>=17.3.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 21.58   Downloading attrs-25.4.0-py3-none-any.whl.metadata (10 kB)
+#56 21.72 Collecting frozenlist>=1.1.1 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 21.73   Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+#56 22.32 Collecting multidict<7.0,>=4.5 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 22.34   Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+#56 22.47 Collecting propcache>=0.2.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 22.48   Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+#56 22.85 Collecting yarl<2.0,>=1.17.0 (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]<=2026.2.0,>=2023.1.0->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 22.87   Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+#56 23.44      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 79.6/79.6 kB 139.7 kB/s eta 0:00:00
+#56 23.55 Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas->datasets->FlagEmbedding==1.2.10->-r requirements.txt (line 14))
+#56 23.56   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+#56 23.67 Collecting markdown-it-py>=2.2.0 (from rich>=12.3.0->typer->huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 23.68   Downloading markdown_it_py-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+#56 23.76 Collecting pygments<3.0.0,>=2.13.0 (from rich>=12.3.0->typer->huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 23.78   Downloading pygments-2.19.2-py3-none-any.whl.metadata (2.5 kB)
+#56 23.93 Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface-hub>=0.20.0->sentence-transformers>=2.2.0->-r requirements.txt (line 15))
+#56 23.94   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+#56 24.06 Downloading fastapi-0.135.1-py3-none-any.whl (116 kB)
+#56 25.13    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 117.0/117.0 kB 105.7 kB/s eta 0:00:00
+#56 25.15 Downloading uvicorn-0.41.0-py3-none-any.whl (68 kB)
+#56 25.73    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 68.8/68.8 kB 110.7 kB/s eta 0:00:00
+#56 25.77 Downloading pydantic-2.12.5-py3-none-any.whl (463 kB)
+#56 30.45    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 463.6/463.6 kB 98.6 kB/s eta 0:00:00
+#56 30.47 Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+#56 48.85    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 112.3 kB/s eta 0:00:00
+#56 48.87 Downloading pydantic_settings-2.13.1-py3-none-any.whl (58 kB)
+#56 49.12    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 58.9/58.9 kB 233.5 kB/s eta 0:00:00
+#56 49.14 Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+#56 49.99    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.5/73.5 kB 112.2 kB/s eta 0:00:00
+#56 50.02 Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+#56 50.82    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.8/78.8 kB 136.0 kB/s eta 0:00:00
+#56 50.83 Downloading redis-7.2.1-py3-none-any.whl (396 kB)
+#56 54.61    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 396.1/396.1 kB 104.6 kB/s eta 0:00:00
+#56 54.63 Downloading qdrant_client-1.17.0-py3-none-any.whl (390 kB)
+#56 58.35    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 390.4/390.4 kB 114.1 kB/s eta 0:00:00
+#56 58.36 Downloading sse_starlette-3.3.2-py3-none-any.whl (14 kB)
+#56 58.43 Downloading prometheus_fastapi_instrumentator-7.1.0-py3-none-any.whl (19 kB)
+#56 59.03 Downloading tenacity-9.1.4-py3-none-any.whl (28 kB)
+#56 59.18 Downloading supervisor-4.3.0-py2.py3-none-any.whl (320 kB)
+#56 62.38    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 320.7/320.7 kB 110.0 kB/s eta 0:00:00
+#56 62.39 Downloading sentence_transformers-5.2.3-py3-none-any.whl (494 kB)
+#56 66.31    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 494.2/494.2 kB 125.0 kB/s eta 0:00:00
+#56 66.33 Downloading accelerate-1.13.0-py3-none-any.whl (383 kB)
+#56 69.81    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 383.7/383.7 kB 109.9 kB/s eta 0:00:00
+#56 69.83 Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+#56 69.90 Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+#56 69.95 Downloading anyio-4.12.1-py3-none-any.whl (113 kB)
+#56 71.15    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 113.6/113.6 kB 124.2 kB/s eta 0:00:00
+#56 71.40 Downloading click-8.3.1-py3-none-any.whl (108 kB)
+#56 72.20    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 108.3/108.3 kB 131.0 kB/s eta 0:00:00
+#56 72.21 Downloading grpcio-1.78.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (6.7 MB)
+#56 134.3    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.7/6.7 MB 109.3 kB/s eta 0:00:00
+#56 134.3 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#56 134.8 Downloading huggingface_hub-1.5.0-py3-none-any.whl (596 kB)
+#56 140.0    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 596.3/596.3 kB 121.5 kB/s eta 0:00:00
+#56 140.0 Downloading idna-3.11-py3-none-any.whl (71 kB)
+#56 140.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 71.0/71.0 kB 115.7 kB/s eta 0:00:00
+#56 140.6 Downloading portalocker-3.2.0-py3-none-any.whl (22 kB)
+#56 141.0 Downloading prometheus_client-0.24.1-py3-none-any.whl (64 kB)
+#56 141.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 64.1/64.1 kB 111.8 kB/s eta 0:00:00
+#56 141.6 Downloading protobuf-7.34.0-cp310-abi3-manylinux2014_x86_64.whl (324 kB)
+#56 144.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 324.3/324.3 kB 108.6 kB/s eta 0:00:00
+#56 144.6 Downloading python_dotenv-1.2.2-py3-none-any.whl (22 kB)
+#56 145.0 Downloading starlette-0.52.1-py3-none-any.whl (74 kB)
+#56 145.9    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 74.3/74.3 kB 111.9 kB/s eta 0:00:00
+#56 145.9 Downloading tqdm-4.67.3-py3-none-any.whl (78 kB)
+#56 146.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.4/78.4 kB 119.9 kB/s eta 0:00:00
+#56 146.8 Downloading transformers-5.3.0-py3-none-any.whl (10.7 MB)
+#56 245.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.7/10.7 MB 106.7 kB/s eta 0:00:00
+#56 245.2 Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+#56 245.3 Downloading urllib3-2.6.3-py3-none-any.whl (131 kB)
+#56 246.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 131.6/131.6 kB 118.0 kB/s eta 0:00:00
+#56 246.7 Downloading certifi-2026.2.25-py3-none-any.whl (153 kB)
+#56 248.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 153.7/153.7 kB 104.1 kB/s eta 0:00:00
+#56 248.2 Downloading datasets-4.6.1-py3-none-any.whl (520 kB)
+#56 252.9    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 520.7/520.7 kB 109.5 kB/s eta 0:00:00
+#56 252.9 Downloading scikit_learn-1.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (9.1 MB)
+#56 336.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.1/9.1 MB 111.8 kB/s eta 0:00:00
+#56 336.2 Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+#56 661.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 110.4 kB/s eta 0:00:00
+#56 661.2 Downloading dill-0.4.0-py3-none-any.whl (119 kB)
+#56 662.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 119.7/119.7 kB 108.8 kB/s eta 0:00:00
+#56 662.2 Downloading h2-4.3.0-py3-none-any.whl (61 kB)
+#56 662.8    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.8/61.8 kB 104.5 kB/s eta 0:00:00
+#56 662.8 Downloading hf_xet-1.3.2-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+#56 701.8    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 108.4 kB/s eta 0:00:00
+#56 701.8 Downloading joblib-1.5.3-py3-none-any.whl (309 kB)
+#56 705.0    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 309.1/309.1 kB 98.2 kB/s eta 0:00:00
+#56 705.0 Downloading multiprocess-0.70.18-py311-none-any.whl (144 kB)
+#56 706.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 144.5/144.5 kB 96.9 kB/s eta 0:00:00
+#56 706.4 Downloading packaging-26.0-py3-none-any.whl (74 kB)
+#56 707.1    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 74.4/74.4 kB 116.8 kB/s eta 0:00:00
+#56 707.1 Downloading pyarrow-23.0.1-cp311-cp311-manylinux_2_28_x86_64.whl (47.6 MB)
+#56 1137.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 47.6/47.6 MB 110.9 kB/s eta 0:00:00
+#56 1137.2 Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+#56 1145.0    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 103.2 kB/s eta 0:00:00
+#56 1145.0 Downloading regex-2026.2.28-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (800 kB)
+#56 1152.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 800.2/800.2 kB 107.3 kB/s eta 0:00:00
+#56 1152.5 Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+#56 1153.1    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 64.7/64.7 kB 103.6 kB/s eta 0:00:00
+#56 1153.1 Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (507 kB)
+#56 1158.1    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 507.2/507.2 kB 106.6 kB/s eta 0:00:00
+#56 1158.2 Downloading threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+#56 1158.3 Downloading tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+#56 1188.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 108.5 kB/s eta 0:00:00
+#56 1188.7 Downloading pandas-3.0.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.3 MB)
+#56 1291.0    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.3/11.3 MB 112.1 kB/s eta 0:00:00
+#56 1291.1 Downloading psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl (155 kB)
+#56 1292.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 155.6/155.6 kB 99.9 kB/s eta 0:00:00
+#56 1292.6 Downloading typer-0.24.1-py3-none-any.whl (56 kB)
+#56 1293.1    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.1/56.1 kB 99.7 kB/s eta 0:00:00
+#56 1293.2 Downloading xxhash-3.6.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (193 kB)
+#56 1295.0    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 193.9/193.9 kB 105.7 kB/s eta 0:00:00
+#56 1295.0 Downloading aiohttp-3.13.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.7 MB)
+#56 1311.2    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.7/1.7 MB 109.3 kB/s eta 0:00:00
+#56 1311.3 Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (151 kB)
+#56 1312.9    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 151.6/151.6 kB 91.2 kB/s eta 0:00:00
+#56 1312.9 Downloading hpack-4.1.0-py3-none-any.whl (34 kB)
+#56 1313.4 Downloading hyperframe-6.1.0-py3-none-any.whl (13 kB)
+#56 1313.5 Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+#56 1315.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 110.6 kB/s eta 0:00:00
+#56 1315.5 Downloading rich-14.3.3-py3-none-any.whl (310 kB)
+#56 1318.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 310.5/310.5 kB 106.6 kB/s eta 0:00:00
+#56 1318.4 Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+#56 1318.5 Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+#56 1318.6 Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+#56 1318.6 Downloading attrs-25.4.0-py3-none-any.whl (67 kB)
+#56 1319.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.6/67.6 kB 78.7 kB/s eta 0:00:00
+#56 1319.5 Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+#56 1321.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 231.1/231.1 kB 116.2 kB/s eta 0:00:00
+#56 1321.5 Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+#56 1322.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.3/87.3 kB 96.9 kB/s eta 0:00:00
+#56 1322.4 Downloading multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (246 kB)
+#56 1324.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 246.3/246.3 kB 105.1 kB/s eta 0:00:00
+#56 1324.8 Downloading propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (210 kB)
+#56 1326.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 210.0/210.0 kB 105.9 kB/s eta 0:00:00
+#56 1326.7 Downloading pygments-2.19.2-py3-none-any.whl (1.2 MB)
+#56 1337.3    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 114.9 kB/s eta 0:00:00
+#56 1337.3 Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+#56 1337.4 Downloading yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (102 kB)
+#56 1338.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 102.7/102.7 kB 103.9 kB/s eta 0:00:00
+#56 1338.4 Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+#56 1339.3 Building wheels for collected packages: FlagEmbedding
+#56 1339.3   Building wheel for FlagEmbedding (setup.py): started
+#56 1339.8   Building wheel for FlagEmbedding (setup.py): finished with status 'done'
+#56 1339.8   Created wheel for FlagEmbedding: filename=flagembedding-1.2.10-py3-none-any.whl size=166176 sha256=e75c40348af5cf0614c839d567a57886b7fe4bd80663be8b42708d4e93b41ac4
+#56 1339.8   Stored in directory: /tmp/pip-ephem-wheel-cache-7pgmedcd/wheels/60/e3/0b/f8c0fca82b2b81f0a9043d9abfb87fbf390112488aa08e6bc9
+#56 1339.8 Successfully built FlagEmbedding
+#56 1341.0 Installing collected packages: supervisor, xxhash, urllib3, typing-inspection, tqdm, threadpoolctl, tenacity, six, shellingham, scipy, safetensors, regex, redis, pyyaml, python-dotenv, pygments, pydantic-core, pyarrow, psutil, protobuf, propcache, prometheus-client, portalocker, packaging, multidict, mdurl, joblib, idna, hyperframe, hpack, hf-xet, h11, grpcio, frozenlist, dill, click, charset_normalizer, certifi, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, scikit-learn, requests, python-dateutil, pydantic, multiprocess, markdown-it-py, httpcore, h2, anyio, aiosignal, starlette, rich, pydantic-settings, pandas, httpx, aiohttp, typer, sse-starlette, prometheus-fastapi-instrumentator, fastapi, qdrant-client, huggingface-hub, tokenizers, datasets, accelerate, transformers, sentence-transformers, FlagEmbedding
+#56 1368.7 Successfully installed FlagEmbedding-1.2.10 accelerate-1.13.0 aiohappyeyeballs-2.6.1 aiohttp-3.13.3 aiosignal-1.4.0 annotated-doc-0.0.4 annotated-types-0.7.0 anyio-4.12.1 attrs-25.4.0 certifi-2026.2.25 charset_normalizer-3.4.4 click-8.3.1 datasets-4.6.1 dill-0.4.0 fastapi-0.135.1 frozenlist-1.8.0 grpcio-1.78.0 h11-0.16.0 h2-4.3.0 hf-xet-1.3.2 hpack-4.1.0 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.5.0 hyperframe-6.1.0 idna-3.11 joblib-1.5.3 markdown-it-py-4.0.0 mdurl-0.1.2 multidict-6.7.1 multiprocess-0.70.18 packaging-26.0 pandas-3.0.1 portalocker-3.2.0 prometheus-client-0.24.1 prometheus-fastapi-instrumentator-7.1.0 propcache-0.4.1 protobuf-7.34.0 psutil-7.2.2 pyarrow-23.0.1 pydantic-2.12.5 pydantic-core-2.41.5 pydantic-settings-2.13.1 pygments-2.19.2 python-dateutil-2.9.0.post0 python-dotenv-1.2.2 pyyaml-6.0.3 qdrant-client-1.17.0 redis-7.2.1 regex-2026.2.28 requests-2.32.5 rich-14.3.3 safetensors-0.7.0 scikit-learn-1.8.0 scipy-1.17.1 sentence-transformers-5.2.3 shellingham-1.5.4 six-1.17.0 sse-starlette-3.3.2 starlette-0.52.1 supervisor-4.3.0 tenacity-9.1.4 threadpoolctl-3.6.0 tokenizers-0.22.2 tqdm-4.67.3 transformers-5.3.0 typer-0.24.1 typing-inspection-0.4.2 urllib3-2.6.3 uvicorn-0.41.0 xxhash-3.6.0 yarl-1.23.0
+#56 1368.7 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#56 1368.9 
+#56 1368.9 [notice] A new release of pip is available: 24.0 -> 26.0.1
+#56 1368.9 [notice] To update, run: pip install --upgrade pip
+#56 DONE 1372.0s
+
+#57 [rag-pipeline stage-1 4/9] COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+#57 DONE 7.4s
+
+#58 [rag-pipeline stage-1 5/9] COPY --from=builder /usr/local/bin/ /usr/local/bin/
+#58 DONE 0.5s
+
+#59 [rag-pipeline stage-1 6/9] COPY --from=builder /llama.cpp/build/bin/ /usr/local/lib/llama/
+#59 DONE 0.1s
+
+#60 [rag-pipeline stage-1 7/9] RUN ln -s /usr/local/lib/llama/llama-server /usr/local/bin/llama-server     && echo "/usr/local/lib/llama" > /etc/ld.so.conf.d/llama.conf && ldconfig
+#60 DONE 0.4s
+
+#61 [rag-pipeline stage-1 8/9] COPY . .
+#61 DONE 1.3s
+
+#62 [rag-pipeline stage-1 9/9] COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#62 DONE 0.1s
+
+#63 [rag-pipeline] exporting to image
+#63 exporting layers
+#63 exporting layers 104.6s done
+#63 exporting manifest sha256:8311aab34655dfe61c990c7d8da0a3fef6086ff7478da704cf70c0660dda2580 0.0s done
+#63 exporting config sha256:e80f90799c7dcc710b38161d4f09636c74453b939f3a3656fe9067396e92b18d 0.0s done
+#63 exporting attestation manifest sha256:e3aef53987261d5681fb1f70c9076b1b3f51967460088bddfbfe8a67c8df5311
+#63 exporting attestation manifest sha256:e3aef53987261d5681fb1f70c9076b1b3f51967460088bddfbfe8a67c8df5311 0.1s done
+#63 exporting manifest list sha256:c48e6340ae29d504a0f37510de2df57ff2ed7f3646420cf3609c74d95cfb7387 0.0s done
+#63 naming to docker.io/library/hr-rag-chatbot-rag-pipeline:latest
+#63 naming to docker.io/library/hr-rag-chatbot-rag-pipeline:latest 0.0s done
+#63 unpacking to docker.io/library/hr-rag-chatbot-rag-pipeline:latest
+#63 unpacking to docker.io/library/hr-rag-chatbot-rag-pipeline:latest 24.1s done
+#63 DONE 129.0s
+
+#64 [rag-pipeline] resolving provenance for metadata file
+#64 DONE 0.2s
+ Image hr-rag-chatbot-frontend Built 
+ Image hr-rag-chatbot-monitoring Built 
+ Image hr-rag-chatbot-rag-pipeline Built 
+ Image hr-rag-chatbot-backend Built 

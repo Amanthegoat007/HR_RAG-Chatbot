@@ -5,7 +5,10 @@ WORKDIR /app
 
 # Install dependencies and build
 COPY package*.json ./
-RUN npm ci
+RUN npm config set fetch-retry-maxtimeout 1200000 && \
+    npm config set fetch-retry-mintimeout 100000 && \
+    npm config set fetch-timeout 3000000 && \
+    npm ci
 
 COPY . .
 RUN npm run build

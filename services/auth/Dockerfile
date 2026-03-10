@@ -24,7 +24,7 @@ WORKDIR /app
 
 COPY services/auth/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --default-timeout=30000 --no-cache-dir -r requirements.txt
 
 # Copy shared utilities
 COPY shared/ /app/shared/

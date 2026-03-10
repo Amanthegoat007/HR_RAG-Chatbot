@@ -1,0 +1,540 @@
+﻿query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)
+query-svc  | Traceback (most recent call last):
+query-svc  |   File "/usr/local/bin/uvicorn", line 6, in <module>
+query-svc  |     sys.exit(main())
+query-svc  |              ^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1485, in __call__
+query-svc  |     return self.main(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1406, in main
+query-svc  |     rv = self.invoke(ctx)
+query-svc  |          ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 1269, in invoke
+query-svc  |     return ctx.invoke(self.callback, **ctx.params)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/click/core.py", line 824, in invoke
+query-svc  |     return callback(*args, **kwargs)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 409, in main
+query-svc  |     run(
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/main.py", line 575, in run
+query-svc  |     server.run()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 65, in run
+query-svc  |     return asyncio.run(self.serve(sockets=sockets))
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+query-svc  |     return runner.run(main)
+query-svc  |            ^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+query-svc  |     return self._loop.run_until_complete(task)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 69, in serve
+query-svc  |     await self._serve(sockets)
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/server.py", line 76, in _serve
+query-svc  |     config.load()
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/config.py", line 433, in load
+query-svc  |     self.loaded_app = import_from_string(self.app)
+query-svc  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/importer.py", line 19, in import_from_string
+query-svc  |     module = importlib.import_module(module_str)
+query-svc  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+query-svc  |     return _bootstrap._gcd_import(name[level:], package, level)
+query-svc  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+query-svc  |   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+query-svc  |   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+query-svc  |   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+query-svc  |   File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+query-svc  |   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+query-svc  |   File "/app/app/main.py", line 50, in <module>
+query-svc  |     from app.pipeline import run_query_pipeline
+query-svc  |   File "/app/app/pipeline.py", line 46, in <module>
+query-svc  |     from app.prompt_templates import build_user_message, SYSTEM_PROMPT
+query-svc  | ImportError: cannot import name 'build_user_message' from 'app.prompt_templates' (/app/app/prompt_templates.py)

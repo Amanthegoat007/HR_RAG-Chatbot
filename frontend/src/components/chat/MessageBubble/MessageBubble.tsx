@@ -44,14 +44,84 @@ interface SourceCitation {
 }
 
 function normalizeAssistantMarkdown(rawText: string): string {
-  return rawText
+  let text = rawText
     .replace(/\r\n/g, "\n")
     .replace(/\u00a0/g, " ")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
-    .replace(/([.!?])\s+(\d+\.\s+)/g, "$1\n\n$2")
-    .replace(/(\d+\.)\s+—\s+/g, "$1 ")
-    .trim();
+    .replace(/([.!?:])\s+(\d+\.\s+)/g, "$1\n\n$2")
+    .replace(/([a-z])\s+(\d+\.\s+\*\*)/g, "$1\n\n$2")
+    .replace(/([.!?:])\s+([-*]\s+)/g, "$1\n\n$2")
+    .replace(/(\d+\.)\s+—\s+/g, "$1 ");
+
+  // Strip "### Answer" / "**Answer**" / "Answer:" headers the LLM may produce
+  text = text.replace(/^#{1,4}\s*Answer\s*\n+/i, "");
+  text = text.replace(/^\*{1,2}Answer\*{1,2}\s*\n+/i, "");
+  text = text.replace(/^Answer[:\s]*\n+/i, "");
+
+  // Strip inline (Source: ...) citations — sources are shown separately
+  text = text.replace(/\n?\(Source:[^)]+\)\s*/g, "\n");
+
+  // Strip <END_ANSWER> stop token
+  text = text.replace(/<END_ANSWER>/g, "");
+
+  return text.trim();
+}
+
+/**
+ * Close unclosed markdown markers so ReactMarkdown renders correctly
+ * during streaming. Handles code blocks, inline code, bold, and italic.
+ *
+ * Improved: processes text line-by-line to avoid miscounting list-item
+ * asterisks (e.g., `* **Phase 1:**`) as unclosed italic markers.
+ */
+function closeStreamingMarkdown(text: string): string {
+  if (!text) return text;
+
+  // 1. Close unclosed fenced code blocks (```)
+  const codeBlockCount = (text.match(/```/g) || []).length;
+  if (codeBlockCount % 2 !== 0) {
+    text += "\n```";
+  }
+
+  // 2. Close unclosed inline code (`) — skip inside fenced code blocks
+  //    Only count backticks outside of fenced code block regions
+  let outsideCodeBlocks = text;
+  if (codeBlockCount >= 2) {
+    // Remove fenced code block contents for counting purposes
+    outsideCodeBlocks = text.replace(/```[\s\S]*?```/g, "");
+  }
+  const inlineCodeCount = (outsideCodeBlocks.match(/(?<!`)`(?!`)/g) || []).length;
+  if (inlineCodeCount % 2 !== 0) {
+    text += "`";
+  }
+
+  // 3. Close unclosed bold (**) — count only actual formatting markers
+  //    Exclude list-item leading asterisks: lines starting with "* "
+  const contentForBold = outsideCodeBlocks
+    .split("\n")
+    .map(line => {
+      const stripped = line.trimStart();
+      // Strip leading list marker "* " or "- " to avoid miscounting
+      if (stripped.startsWith("* ")) return stripped.slice(2);
+      return stripped;
+    })
+    .join("\n");
+  const boldCount = (contentForBold.match(/\*\*(?!\*)/g) || []).length;
+  if (boldCount % 2 !== 0) {
+    text += "**";
+  }
+
+  // 4. Close unclosed italic (*) — check after bold cleanup
+  //    Only count lone asterisks that are NOT part of ** and NOT list markers
+  const afterBoldClose = boldCount % 2 !== 0 ? contentForBold + "**" : contentForBold;
+  const withoutBold = afterBoldClose.replace(/\*\*/g, "");
+  const italicCount = (withoutBold.match(/\*/g) || []).length;
+  if (italicCount % 2 !== 0) {
+    text += "*";
+  }
+
+  return text;
 }
 
 /**
@@ -155,7 +225,7 @@ function SourceChip({ citation }: { citation: SourceCitation }) {
   );
 }
 
-/** Renders the sources panel with expandable cards below the answer */
+/** Renders the sources panel — collapsed by default, click to expand */
 function SourcesPanel({
   citations,
   enrichedSources,
@@ -163,24 +233,36 @@ function SourcesPanel({
   citations: SourceCitation[];
   enrichedSources?: any[];
 }) {
+  const [showSources, setShowSources] = useState(false);
   // Prefer enriched sources from backend (have chunk text) over citation extraction
   const hasEnriched = enrichedSources && enrichedSources.length > 0;
   const items = hasEnriched ? enrichedSources : citations;
   if (!items || items.length === 0) return null;
 
+  const label = items.length === 1 ? "Source" : `Sources (${items.length})`;
+
   return (
     <div className={classes.sourcesPanel}>
-      <div className={classes.sourcesLabel}>
+      <div
+        className={classes.sourcesLabel}
+        onClick={() => setShowSources(!showSources)}
+        style={{ cursor: "pointer", userSelect: "none" }}
+      >
         <TbSourceIcon size={12} />
-        Sources ({items.length})
+        {label}
+        <span style={{ marginLeft: "4px", fontSize: "0.7em" }}>
+          {showSources ? "▲" : "▼"}
+        </span>
       </div>
-      <div>
-        {hasEnriched
-          ? enrichedSources!.map((src: any, i: number) => (
-              <ExpandableSourceCard key={i} source={src} />
-            ))
-          : citations.map((c, i) => <SourceChip key={i} citation={c} />)}
-      </div>
+      {showSources && (
+        <div>
+          {hasEnriched
+            ? enrichedSources!.map((src: any, i: number) => (
+                <ExpandableSourceCard key={i} source={src} />
+              ))
+            : citations.map((c, i) => <SourceChip key={i} citation={c} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -488,8 +570,8 @@ export default function MessageBubble({
                   {content.blocks.map((block, index) => {
                     switch (block.type) {
                       case "text": {
-                        const normalizedBlockMarkdown =
-                          normalizeAssistantMarkdown(block.content || "");
+                        const normalizedBlockMarkdown = closeStreamingMarkdown(
+                          normalizeAssistantMarkdown(block.content || ""));
                         return (
                           <Box
                             key={index}
@@ -578,7 +660,7 @@ export default function MessageBubble({
               ? extractSourceCitations(textForParsing)
               : { cleanText: textForParsing, citations: [] };
             const markdownText = !isUser
-              ? normalizeAssistantMarkdown(answerText)
+              ? closeStreamingMarkdown(normalizeAssistantMarkdown(answerText))
               : answerText;
 
             return (

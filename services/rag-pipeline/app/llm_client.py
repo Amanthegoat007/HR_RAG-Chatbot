@@ -216,16 +216,26 @@ async def _call_local_llm(
         httpx.HTTPStatusError: On 4xx/5xx responses.
         httpx.TimeoutException: If the server doesn't respond in time.
     """
+    # Ensure we have a valid int for tokens
+    final_max_tokens = max_tokens if max_tokens is not None else settings.llm_max_tokens
+    
     payload = {
         "model": "mistral",         # llama.cpp ignores model name but needs it
         "messages": messages,
         "stream": True,
         "temperature": settings.llm_temperature if temperature is None else temperature,
-        "max_tokens": max_tokens if max_tokens is not None else settings.llm_max_tokens,
+        "max_tokens": final_max_tokens,
         "top_p": settings.llm_top_p,
+        "frequency_penalty": settings.llm_frequency_penalty,
+        "presence_penalty": settings.llm_presence_penalty,
     }
+    
+    # Always include the strong Qwen EOS token to prevent infinite loops
+    base_stops = ["<|im_end|>", "<|endoftext|>"]
     if stop:
-        payload["stop"] = stop
+        payload["stop"] = stop + base_stops
+    else:
+        payload["stop"] = base_stops
 
     async with client.stream(
         "POST",
