@@ -1,0 +1,24 @@
+# ============================================================================
+# FILE: monitoring/grafana/provisioning/datasources/datasources.yml
+# PURPOSE: Auto-provision Prometheus as the default Grafana datasource.
+# ARCHITECTURE REF: §10 — Monitoring & Observability
+# ============================================================================
+#
+# Grafana loads this file at startup from the provisioning directory.
+# This eliminates the need to manually add the datasource through the UI.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy          # Grafana backend proxies requests to Prometheus
+    orgId: 1
+    # Prometheus container is accessible by service name on the monitoring network
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: false        # Prevent accidental modification via UI
+    jsonData:
+      timeInterval: "15s"  # Match Prometheus scrape interval
+      httpMethod: POST     # POST is more efficient for large queries

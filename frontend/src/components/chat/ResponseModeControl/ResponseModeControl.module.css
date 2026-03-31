@@ -1,0 +1,119 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.infoButton {
+  width: 24px;
+  height: 24px;
+  color: var(--app-text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  transition:
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.infoButton:hover {
+  color: var(--app-text-primary);
+  border-color: var(--app-accent-border);
+  transform: translateY(-1px);
+}
+
+.switch {
+  --option-width: 72px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+.indicator {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: var(--option-width);
+  height: calc(100% - 4px);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--app-accent-soft) 0%, rgba(255, 255, 255, 0.04) 100%);
+  box-shadow: inset 0 0 0 1px var(--app-accent-border);
+  z-index: 0;
+}
+
+.option {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--app-text-secondary);
+  border-radius: 999px;
+  min-width: var(--option-width);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition:
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.optionContent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.optionIcon {
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.88;
+}
+
+.option:hover:not(:disabled) {
+  color: var(--app-text-primary);
+}
+
+.option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.optionActive {
+  color: var(--app-text-primary);
+}
+
+.optionActive .optionIcon {
+  color: var(--app-accent-primary);
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .root {
+    max-width: 100%;
+  }
+
+  .option {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infoButton,
+  .option {
+    transition: none;
+  }
+}

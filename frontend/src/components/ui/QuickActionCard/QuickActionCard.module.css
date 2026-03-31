@@ -1,0 +1,181 @@
+.cardButton {
+  width: 100%;
+  height: 100%;
+}
+
+.cardSurface {
+  position: relative;
+  height: 100%;
+  min-height: 156px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background:
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(71, 85, 105, 0.36) 0%, rgba(30, 41, 59, 0.82) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 36px rgba(15, 23, 42, 0.18);
+  transition:
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    background-position var(--motion-duration-slow) var(--motion-ease-smooth);
+  cursor: pointer;
+}
+
+.cardSurfaceLanding {
+  min-height: 112px;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: 18px;
+  border-color: rgba(148, 163, 184, 0.14);
+  background:
+    radial-gradient(circle at top right, var(--app-accent-soft) 0%, transparent 38%),
+    linear-gradient(180deg, rgba(51, 65, 85, 0.18) 0%, rgba(15, 23, 42, 0.28) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.cardSurfaceLanding .iconBadge {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.cardSurfaceLanding .arrowBadge {
+  width: 26px;
+  height: 26px;
+  color: var(--app-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.cardSurfaceLanding .title {
+  font-size: 0.93rem;
+}
+
+.cardSurfaceLanding .description {
+  font-size: 0.82rem;
+  line-height: 1.38;
+}
+
+.cardButton:hover .cardSurfaceLanding .arrowBadge,
+.cardButton:focus-visible .cardSurfaceLanding .arrowBadge {
+  transform: translate(1px, -1px);
+  color: var(--app-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cardButton:hover .cardSurface,
+.cardButton:focus-visible .cardSurface {
+  transform: translateY(-4px);
+  border-color: rgba(16, 185, 129, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 42px rgba(15, 23, 42, 0.22);
+}
+
+.cardButton:hover .cardSurface.cardSurfaceLanding,
+.cardButton:focus-visible .cardSurface.cardSurfaceLanding {
+  transform: translateY(-1px);
+  border-color: var(--app-accent-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 12px 22px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(16, 185, 129, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.iconBadge {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.arrowBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-background);
+  background: var(--app-text-primary);
+  border: 1px solid transparent;
+  transition:
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.cardButton:hover .arrowBadge,
+.cardButton:focus-visible .arrowBadge {
+  transform: translate(2px, -2px);
+  color: var(--app-accent-primary);
+  background: var(--app-background);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  color: var(--app-text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.description {
+  color: var(--app-text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .cardSurface {
+    min-height: 144px;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .cardSurfaceLanding {
+    min-height: 108px;
+    padding: 14px;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardSurface,
+  .arrowBadge {
+    transition: none;
+  }
+}

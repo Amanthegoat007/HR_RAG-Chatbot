@@ -1,0 +1,46 @@
+.landing {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: clamp(16px, 2.2vh, 24px);
+  padding: clamp(4px, 0.8vh, 10px) 0 clamp(8px, 1.2vh, 14px);
+}
+
+.heroFrame {
+  min-height: 0;
+  position: relative;
+}
+
+.starterRail {
+  min-height: 0;
+}
+
+.heroFrame::before {
+  content: "";
+  position: absolute;
+  inset: -12px 16% auto;
+  height: 132px;
+  background: radial-gradient(circle, var(--app-accent-soft) 0%, rgba(15, 23, 42, 0) 72%);
+  filter: blur(24px);
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.heroFrame > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .landing {
+    gap: 18px;
+    padding-bottom: 14px;
+  }
+
+  .heroFrame::before {
+    inset-inline: 6%;
+    height: 116px;
+  }
+}

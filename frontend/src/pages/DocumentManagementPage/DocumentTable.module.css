@@ -1,0 +1,53 @@
+.table {
+  background: transparent;
+}
+
+.table thead th {
+  color: var(--app-text-secondary);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom-color: var(--app-border);
+}
+
+.row td {
+  border-bottom-color: var(--app-border);
+}
+
+.row:hover {
+  background: var(--app-surface-hover);
+}
+
+.fileMeta {
+  min-width: 0;
+}
+
+.filename {
+  color: var(--app-text-primary);
+}
+
+.fileSubtext,
+.cellMuted {
+  color: var(--app-text-secondary);
+}
+
+.emptyState {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border: 1px dashed var(--app-border);
+  border-radius: 20px;
+  background: var(--app-surface-hover);
+  padding: 24px;
+}
+
+.emptyTitle {
+  color: var(--app-text-primary);
+  font-weight: 600;
+}
+
+.emptyCopy {
+  color: var(--app-text-secondary);
+  max-width: 420px;
+}

@@ -1,0 +1,17 @@
+# Root .dockerignore — used by ingest service (context: .)
+.git
+.env
+.env.*
+*.log
+.DS_Store
+.vscode
+__pycache__
+*.pyc
+.pytest_cache
+frontend/node_modules
+frontend/dist
+services/llm/models
+monitoring
+db
+*.md
+LICENSE

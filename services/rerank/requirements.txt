@@ -1,0 +1,8 @@
+FlagEmbedding
+fastapi
+prometheus_fastapi_instrumentator
+pydantic
+pydantic-settings
+pytest
+torch
+uvicorn

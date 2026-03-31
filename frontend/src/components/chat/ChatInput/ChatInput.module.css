@@ -1,0 +1,237 @@
+/* Chat Input Styles */
+.inputContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  position: relative;
+  transition:
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard);
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.inputContainerHero {
+  max-width: 860px;
+  border-color: rgba(148, 163, 184, 0.16);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+}
+
+.inputContainerFocused {
+  border-color: var(--app-accent-border);
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(16, 185, 129, 0.08);
+}
+
+.inputContainerReady {
+  border-color: var(--app-accent-border-strong);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(16, 185, 129, 0.12),
+    0 0 18px rgba(16, 185, 129, 0.08);
+}
+
+.fileAttachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--app-surface-hover);
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  width: min(100%, fit-content);
+  max-width: 100%;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.fileAttachmentInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.attachmentMessage {
+  color: var(--app-text-secondary);
+  margin-top: -4px;
+}
+
+.attachmentMessageSuccess {
+  color: var(--app-accent-primary);
+  margin-top: -4px;
+}
+
+.attachmentMessageError {
+  color: var(--mantine-color-red-6);
+  margin-top: -4px;
+}
+
+.textareaWrapper {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.suggestionBox {
+  border-top: 1px solid var(--app-border);
+  padding-top: 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background-color: transparent;
+}
+
+.suggestionItem:hover {
+  background-color: var(--app-surface-hover);
+}
+
+.composerForm {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.composerFormHero {
+  gap: 8px;
+}
+
+.textareaInput {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.actionButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.utilityActionButton {
+  color: var(--app-text-secondary);
+  transition:
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.utilityActionButton:hover:not(:disabled) {
+  color: var(--app-accent-primary);
+  background-color: var(--app-accent-soft);
+}
+
+.utilityActionButtonRecording {
+  color: var(--app-accent-primary);
+  background-color: var(--app-accent-soft);
+  transform: scale(1.04);
+}
+
+.voiceGuidance {
+  align-items: center;
+  color: var(--app-text-secondary);
+  min-height: 18px;
+}
+
+.sendButton {
+  color: var(--app-text-primary);
+  background: rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  transition:
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.sendButtonReady {
+  color: white;
+  background: linear-gradient(135deg, var(--app-accent-primary) 0%, var(--app-accent-secondary) 100%);
+  border-color: transparent;
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(16, 185, 129, 0.12);
+}
+
+.sendButtonReady:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 28px rgba(15, 23, 42, 0.22),
+    0 0 18px rgba(16, 185, 129, 0.14);
+}
+
+.sendButtonRecording {
+  color: white;
+  background: linear-gradient(135deg, var(--app-accent-primary) 0%, var(--app-accent-secondary) 100%);
+  border-color: transparent;
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.18),
+    0 0 14px rgba(16, 185, 129, 0.12);
+}
+
+.sendButtonStop {
+  color: white;
+  background: rgba(239, 68, 68, 0.72);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.sendButton:disabled {
+  opacity: 0.58;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .inputContainer {
+    padding: 0;
+  }
+
+  .actionRow {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .actionButtons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inputContainer,
+  .utilityActionButton,
+  .sendButton {
+    transition: none;
+  }
+}

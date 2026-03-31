@@ -1,0 +1,103 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
+
+class RagSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
+    )
+
+    # Base configuration
+    host: str = "0.0.0.0"
+    port: int = 8002
+    log_level: str = "INFO"
+    log_format: str = "json"
+    service_name: str = "rag-pipeline-svc"
+    service_version: str = "1.0.0"
+
+    # Redis (Semantic cache)
+    redis_url: str = "redis://redis:6379/0"
+
+    # Qdrant
+    qdrant_url: str = "http://qdrant:6333"
+    qdrant_collection: str = "hr_documents"
+
+    # ─── LLM Configuration ────────────────────────────────────────────────
+    llm_server_url: str = "http://localhost:8080"
+    llm_circuit_breaker_threshold: int = 5
+    llm_circuit_breaker_recovery_seconds: int = 60
+    llm_provider: str = "local"  # "local" | "azure_openai"
+    llm_temperature: float = 0.1
+    llm_max_tokens: int = 2560        # ~400 thinking + ~2160 answer budget
+    llm_max_tokens_short: int = 1536   # ~400 thinking + ~1136 answer budget
+    llm_max_tokens_medium: int = 2048  # ~400 thinking + ~1648 answer budget
+    llm_max_tokens_long: int = 2560    # ~400 thinking + ~2160 answer budget
+    llm_max_tokens_deep_short: int = 500
+    llm_max_tokens_deep_medium: int = 800
+    llm_max_tokens_deep_long: int = 1000
+    llm_max_tokens_deep_cap: int = 1000
+    llm_top_p: float = 0.95
+    llm_frequency_penalty: float = 0.2
+    llm_presence_penalty: float = 0.2
+    llm_stop_sequence: str = "<END_ANSWER>"
+    llm_adaptive_tokens_enabled: bool = True
+    llm_stream_timeout_seconds: float = 300.0
+    llm_deep_reasoning_token_limit_before_fallback: int = 256
+    llm_deep_first_visible_timeout_seconds: float = 4.0
+    prompt_max_chunks: int = 6
+    prompt_max_chunk_chars: int = 2000
+    prompt_max_chunk_sentences: int = 15
+    deterministic_answers_enabled: bool = False
+    deterministic_calc_enabled: bool = False
+    deterministic_list_enabled: bool = False
+    deterministic_confidence_threshold: float = 0.8
+    calc_context_max_chunks: int = 2
+    list_context_max_chunks: int = 3
+
+    # Azure OpenAI fallback (optional)
+    azure_openai_endpoint: Optional[str] = None
+    azure_openai_api_key: Optional[str] = None
+    azure_openai_deployment_id: str = "gpt-4o"
+    azure_openai_api_version: str = "2024-02-01"
+
+    # ─── Embedding Model (In-Process BGE-M3) ──────────────────────────────
+    embedding_model_name: str = "BAAI/bge-m3"
+    embedding_batch_size: int = 32
+    embedding_max_length: int = 8192
+    embedding_svc_url: str = "http://localhost:8004"  # Legacy, unused in consolidated mode
+
+    # ─── Reranker Model (In-Process BGE-Reranker) ─────────────────────────
+    reranker_model_name: str = "BAAI/bge-reranker-v2-m3"
+    reranker_max_length: int = 1024
+    reranker_batch_size: int = 16
+    reranker_svc_url: str = "http://localhost:8005"  # Legacy, unused in consolidated mode
+    reranker_timeout_seconds: float = 30.0
+
+    # ─── Model Download / Cache Warmup ─────────────────────────────────────
+    model_prefetch_on_startup: bool = True
+    model_download_workers: int = 16
+
+    # ─── Retrieval & Reranking Pipeline ───────────────────────────────────
+    retrieval_rerank_top_n: int = 15
+    retrieval_dense_top_k: int = 20
+    retrieval_sparse_top_k: int = 20
+    hybrid_search_alpha: float = 0.5
+    top_k_retrieval: int = 20
+    top_n_rerank: int = 8
+    top_n_rerank_calc: int = 4
+    top_n_rerank_list: int = 6
+    score_threshold: float = 0.2
+
+    # ─── Semantic Cache ───────────────────────────────────────────────
+    cache_similarity_threshold: float = 0.92
+    cache_ttl_seconds: int = 86400  # 24 hours
+    context_resolution_history_turns: int = 5
+    context_resolution_max_tokens: int = 240
+    context_resolution_confidence_threshold: float = 0.68
+    context_resolution_cache_ttl_seconds: int = 900
+    context_resolution_domain_name: str = "HR assistant"
+    context_resolution_domain_description: str = (
+        "Policies, benefits, leave, payroll, onboarding, eligibility, employee guidance, and uploaded conversation documents."
+    )
+    context_resolution_domain_examples: str = ""
+
+settings = RagSettings()

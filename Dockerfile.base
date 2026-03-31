@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Install all common apt dependencies for backend, ingest, and rag-pipeline
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    supervisor \
+    tesseract-ocr \
+    tesseract-ocr-ara \
+    poppler-utils \
+    libmagic1 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install CUDA PyTorch ONCE so the layer is cached and shared across all 3 backend services
+# This avoids "No space left on device" (Errno 28) on 97GB drives 
+RUN pip install --default-timeout=30000 --no-cache-dir torch torchvision

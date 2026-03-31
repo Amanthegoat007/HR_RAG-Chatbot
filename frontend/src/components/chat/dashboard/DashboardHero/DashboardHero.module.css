@@ -1,0 +1,325 @@
+.heroContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.landingIntro {
+    width: min(100%, 760px);
+    margin: 0 auto;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 4px 0 2px;
+    text-align: center;
+    position: relative;
+    isolation: isolate;
+}
+
+.landingBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--app-accent-border);
+    background: linear-gradient(135deg, var(--app-accent-soft) 0%, rgba(255, 255, 255, 0.03) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 8px 18px rgba(15, 23, 42, 0.08);
+    transition:
+        border-color var(--motion-duration-base) var(--motion-ease-standard),
+        transform var(--motion-duration-base) var(--motion-ease-standard),
+        box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.landingBadgeImage {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: block;
+    filter: drop-shadow(0 0 10px var(--app-accent-glow));
+    opacity: 0.96;
+}
+
+.landingBadgeLabel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--app-accent-secondary);
+}
+
+.landingCopyStack {
+    max-width: 100%;
+}
+
+.landingHeading {
+    margin: 0;
+    max-width: 18ch;
+    font-size: clamp(1.95rem, 3vw, 2.5rem);
+    font-weight: 650;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    color: var(--app-text-primary);
+    text-wrap: balance;
+}
+
+.landingSubtitle {
+    max-width: 54ch;
+    font-size: clamp(0.98rem, 1.2vw, 1.06rem);
+    line-height: 1.55;
+    color: var(--app-text-secondary);
+    text-wrap: balance;
+}
+
+.landingIntro:hover .landingBadge {
+    transform: translateY(-1px);
+    border-color: var(--app-accent-border-strong);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 12px 22px rgba(15, 23, 42, 0.1);
+}
+
+.heroContent {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(12px, 1.8vh, 20px);
+    width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.heroDefault {
+    padding-block: clamp(4px, 1vh, 12px);
+}
+
+.heroGlow {
+    position: absolute;
+    width: 44%;
+    height: 48%;
+    top: -8%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(147, 197, 253, 0.26) 0%, rgba(147, 197, 253, 0) 72%);
+    pointer-events: none;
+    filter: blur(10px);
+    z-index: -1;
+}
+
+.heroGlowSecondary {
+    position: absolute;
+    width: 48%;
+    height: 36%;
+    bottom: -18%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 70%);
+    pointer-events: none;
+    filter: blur(20px);
+    z-index: -1;
+}
+
+.visualCluster {
+    margin-bottom: 0;
+}
+
+.highlightText {
+    color: #65a30d;
+    color: var(--app-accent-tertiary, #65a30d);
+}
+
+.identityPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    color: var(--app-text-secondary);
+    max-width: 100%;
+}
+
+.identityInitials {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--app-accent-primary) 0%, var(--app-accent-secondary) 100%);
+    color: white;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.identityName {
+    color: var(--app-text-primary);
+    font-weight: 600;
+}
+
+.identityDivider {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--app-accent-border-strong);
+    flex-shrink: 0;
+}
+
+.identityRole {
+    color: var(--app-accent-secondary);
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.promptLine {
+    color: var(--app-accent-secondary);
+    font-size: 0.96rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes spin-aura {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes spin-image {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.imageContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.auraEffect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 130%;
+    height: 130%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+            #e9f5d9 0%,
+            #e9f5d9 50%,
+            #93c5fd 50%,
+            #93c5fd 100%);
+    filter: blur(18px);
+    animation: spin-aura 4s linear infinite;
+    z-index: 0;
+    opacity: 0.9;
+}
+
+.heroImage {
+    width: clamp(72px, 6vw, 88px);
+    height: auto;
+    display: block;
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    animation: spin-image 15s linear infinite;
+}
+
+.copyStack {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0;
+}
+
+.heroTitle {
+    font-size: clamp(2rem, 4vw, 3.15rem);
+    font-weight: 750;
+    color: var(--app-text-primary);
+    text-align: center;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 0;
+}
+
+.heroTitleAccent {
+    text-wrap: balance;
+}
+
+.heroTitleAccent .highlightText {
+    white-space: nowrap;
+}
+
+.supportingCopy {
+    max-width: 620px;
+    line-height: 1.45;
+    text-wrap: balance;
+}
+
+@media (max-height: 980px) {
+    .heroContent {
+        gap: 10px;
+        padding-block: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .heroTitle {
+        font-size: clamp(1.9rem, 8vw, 2.6rem);
+    }
+
+    .supportingCopy {
+        font-size: 0.98rem;
+        max-width: 28ch;
+    }
+
+    .landingIntro {
+        gap: 10px;
+    }
+
+    .landingHeading {
+        max-width: 15ch;
+        font-size: clamp(1.7rem, 7vw, 2.1rem);
+    }
+
+    .landingSubtitle {
+        max-width: 30ch;
+        font-size: 0.95rem;
+    }
+
+    .identityPill {
+        gap: 8px;
+        padding: 7px 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landingBadge {
+        transition: none;
+    }
+}

@@ -1,0 +1,9 @@
+asyncpg
+fastapi
+jose
+passlib
+prometheus_fastapi_instrumentator
+pydantic
+pydantic-settings
+pytest
+uvicorn

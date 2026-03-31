@@ -1,0 +1,39 @@
+.shell {
+  height: 100dvh;
+  display: flex;
+  min-height: 0;
+  background: var(--app-background);
+}
+
+.desktopSidebar {
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid var(--app-border);
+  background: var(--app-surface-elevated);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--app-background);
+}
+
+.mobileDrawerContent {
+  background: var(--app-surface-elevated);
+}
+
+.mobileDrawerBody {
+  padding: 0;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktopSidebar,
+  .main {
+    transition: none;
+  }
+}

@@ -1,0 +1,22 @@
+.viewport {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  padding-bottom: clamp(20px, 3vh, 36px);
+  scroll-behavior: smooth;
+  scroll-padding-bottom: clamp(180px, 22vh, 260px);
+  overscroll-behavior: contain;
+}
+
+.emptyState {
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.conversation {
+  min-height: 100%;
+  padding-bottom: clamp(12px, 2vh, 24px);
+}

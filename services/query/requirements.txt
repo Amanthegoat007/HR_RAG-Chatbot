@@ -1,0 +1,12 @@
+fastapi
+httpx
+numpy
+prometheus_fastapi_instrumentator
+pydantic
+pydantic-settings
+pytest
+qdrant-client
+redis
+sse_starlette
+tenacity
+uvicorn

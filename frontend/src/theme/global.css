@@ -1,0 +1,188 @@
+/* Global Animations and Keyframes */
+
+:root,
+html,
+body,
+#root {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+:root {
+    --motion-duration-fast: 160ms;
+    --motion-duration-instant: 120ms;
+    --motion-duration-base: 220ms;
+    --motion-duration-slow: 420ms;
+    --motion-duration-hero: 700ms;
+    --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --motion-ease-smooth: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Light mode CSS variables */
+:root[data-mantine-color-scheme="light"] {
+    --app-background: #f6f8fb;
+    --app-background-secondary: radial-gradient(circle at top, rgba(16, 185, 129, 0.08) 0%, rgba(244, 247, 252, 0.92) 34%, #f6f8fb 72%);
+    --app-background-module: #eef2f7;
+    --app-surface: rgba(255, 255, 255, 0.92);
+    --app-surface-elevated: #ffffff;
+    --app-surface-hover: #eef4f5;
+    --app-border: rgba(15, 23, 42, 0.08);
+    --app-border-hover: #10b981;
+    --app-text-primary: #0f172a;
+    --app-text-secondary: #475569;
+    --app-text-tertiary: #94a3b8;
+    --app-accent-primary: #10b981;
+    --app-accent-secondary: #34d399;
+    --app-shadow-sm: 0 8px 18px rgba(15, 23, 42, 0.04);
+    --app-shadow-md: 0 16px 36px rgba(15, 23, 42, 0.06);
+    --app-shadow-lg: 0 24px 54px rgba(15, 23, 42, 0.1);
+    --app-background-dark: #0f172a;
+    --app-source-card-bg: #f1f5f9;
+    --app-source-card-bg-hover: #e2e8f0;
+    --app-source-card-border: rgba(15, 23, 42, 0.08);
+    --app-source-card-border-active: rgba(16, 185, 129, 0.35);
+    --app-code-bg: #f8fafc;
+    --app-code-border: rgba(15, 23, 42, 0.08);
+    --app-accent-soft: rgba(16, 185, 129, 0.12);
+    --app-accent-soft-hover: rgba(16, 185, 129, 0.18);
+    --app-accent-border: rgba(16, 185, 129, 0.28);
+    --app-accent-border-strong: rgba(16, 185, 129, 0.42);
+    --app-accent-glow: rgba(16, 185, 129, 0.35);
+    --app-focus-ring: rgba(16, 185, 129, 0.28);
+    --app-status-success: #059669;
+    --app-status-warning: #d97706;
+    --app-status-danger: #dc2626;
+}
+
+/* Dark mode CSS variables */
+:root[data-mantine-color-scheme="dark"] {
+    --app-background: #0f172a;
+    --app-background-secondary: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.1) 10%, #0f172a 70%);
+    --app-background-module: #1e293b;
+    --app-surface: #182235;
+    --app-surface-elevated: #1e293b;
+    --app-surface-hover: #334155;
+    --app-border: rgba(255, 255, 255, 0.06);
+    --app-border-hover: #10b981;
+    --app-text-primary: #f8fafc;
+    --app-text-secondary: #94a3b8;
+    --app-text-tertiary: #64748b;
+    --app-accent-primary: #10b981;
+    --app-accent-secondary: #6ee7b7;
+    --app-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --app-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --app-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --app-background-dark: #0f172a;
+    --app-source-card-bg: rgba(30, 41, 59, 0.65);
+    --app-source-card-bg-hover: rgba(51, 65, 85, 0.75);
+    --app-source-card-border: rgba(255, 255, 255, 0.08);
+    --app-source-card-border-active: rgba(16, 185, 129, 0.45);
+    --app-code-bg: rgba(15, 23, 42, 0.75);
+    --app-code-border: rgba(255, 255, 255, 0.08);
+    --app-accent-soft: rgba(16, 185, 129, 0.2);
+    --app-accent-soft-hover: rgba(16, 185, 129, 0.28);
+    --app-accent-border: rgba(16, 185, 129, 0.35);
+    --app-accent-border-strong: rgba(16, 185, 129, 0.5);
+    --app-accent-glow: rgba(16, 185, 129, 0.45);
+    --app-focus-ring: rgba(16, 185, 129, 0.34);
+    --app-status-success: #34d399;
+    --app-status-warning: #f59e0b;
+    --app-status-danger: #f87171;
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes glowOrb {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        transform: scale(0.95);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+        transform: scale(1);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        transform: scale(0.95);
+    }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+*::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+
+/* Focus visible styles */
+*:focus-visible {
+    outline: 2px solid var(--app-focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}

@@ -1,0 +1,90 @@
+.page {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 38%),
+    var(--app-background);
+}
+
+.container {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.hero,
+.statCard,
+.uploadPanel,
+.libraryPanel {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-md);
+}
+
+.hero {
+  padding: 28px;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 44%),
+    var(--app-surface);
+}
+
+.heroBadge {
+  align-self: flex-start;
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent-border);
+  color: var(--app-accent-primary);
+}
+
+.heroTitle {
+  color: var(--app-text-primary);
+  font-size: clamp(1.75rem, 2vw, 2.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.heroCopy,
+.sectionCopy,
+.statHint {
+  color: var(--app-text-secondary);
+}
+
+.statCard {
+  padding: 20px;
+}
+
+.statLabel {
+  color: var(--app-text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.statValue {
+  color: var(--app-text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.statIconMuted,
+.sectionIcon {
+  color: var(--app-accent-primary);
+}
+
+.uploadPanel {
+  padding: 22px;
+  align-self: start;
+}
+
+.libraryPanel {
+  padding: 22px;
+  grid-column: span 2;
+}
+
+.sectionTitle {
+  color: var(--app-text-primary);
+}
+
+@media (max-width: 1200px) {
+  .libraryPanel {
+    grid-column: span 1;
+  }
+}

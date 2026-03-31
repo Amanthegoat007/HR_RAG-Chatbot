@@ -1,0 +1,119 @@
+.sidebarRoot {
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  flex-shrink: 0;
+}
+
+.searchShell {
+  overflow: hidden;
+  transform-origin: top;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.searchShellVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.searchShellHidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.contentArea {
+  flex: 1;
+  overflow: hidden;
+}
+
+.collapsedAction {
+  justify-content: center;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.collapsedAction:hover {
+  transform: translateY(-1px);
+}
+
+.navButton {
+  height: 44px;
+  padding: 0 16px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--app-text-primary);
+  border-radius: 18px;
+}
+
+.navButton:hover {
+  background: rgba(132, 204, 22, 0.08);
+}
+
+.sectionToggle {
+  cursor: pointer;
+}
+
+.sectionLabel {
+  letter-spacing: 0.05em;
+}
+
+.conversationItem {
+  border-radius: 22px;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.conversationItem:hover {
+  transform: translateX(2px);
+  background: rgba(132, 204, 22, 0.06);
+}
+
+.conversationItem[data-active="true"] {
+  background: var(--mantine-color-brand-light);
+  box-shadow: inset 0 0 0 1px rgba(132, 204, 22, 0.08);
+}
+
+.conversationButton {
+  min-width: 0;
+  flex-grow: 1;
+  background: transparent;
+  color: var(--app-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conversationButtonActive {
+  font-weight: 700;
+}
+
+.deleteButton {
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.conversationItem:hover .deleteButton,
+.conversationItem[data-active="true"] .deleteButton {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchShell,
+  .collapsedAction,
+  .conversationItem,
+  .deleteButton {
+    transition: none;
+  }
+}

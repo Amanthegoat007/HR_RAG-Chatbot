@@ -1,0 +1,639 @@
+/* Message Bubble Container */
+.messageBubble {
+  display: flex;
+  gap: 12px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.messageRow {
+  width: 100%;
+  display: flex;
+}
+
+.messageRowUser {
+  justify-content: flex-end;
+}
+
+.messageRowAssistant {
+  justify-content: flex-start;
+}
+
+.messageSurface {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.messageSurfaceUser {
+  width: fit-content;
+  max-width: 76%;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.messageSurfaceAssistant {
+  width: 100%;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.messageBody {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.assistantMarker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-top: 20px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    135deg,
+    var(--app-accent-primary) 0%,
+    var(--app-accent-secondary) 100%
+  );
+}
+
+.loadingRow {
+  align-self: flex-start;
+  padding-left: 8px;
+  padding-top: 4px;
+}
+
+/* Avatar Circle */
+.avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Content Container */
+.contentWrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Message Content Box */
+.messageContent {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Title Styles */
+.messageTitle {
+  font-weight: 600;
+}
+
+/* Data Visualization Container */
+.dataContainer {
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+/* Code Block */
+.codeBlock {
+  background-color: var(--app-code-bg);
+  border: 1px solid var(--app-code-border);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  white-space: pre-wrap;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+}
+
+/* Text Content */
+.textContent {
+  white-space: pre-wrap;
+  color: var(--app-text-primary);
+}
+
+/* Copy Button Container */
+.copyButtonWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Follow-up Question Item */
+.followUpItem {
+  cursor: pointer;
+}
+
+/* ── Markdown Table Styles ─────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  font-size: 0.9em;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--app-shadow-sm);
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--app-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background-color: var(--app-surface-hover);
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:nth-child(even) {
+  background-color: var(--app-surface-hover);
+}
+
+.table tr:hover {
+  background-color: var(--app-surface-hover);
+  filter: brightness(0.98);
+}
+
+.table td {
+  color: var(--app-text-secondary);
+}
+
+/* ── Markdown Content Styles ──────────────────── */
+.markdownContent {
+  color: var(--app-text-primary);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+/* Headings */
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+  color: var(--app-text-primary);
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.markdownContent h1 {
+  font-size: 1.35em;
+}
+.markdownContent h2 {
+  font-size: 1.2em;
+}
+.markdownContent h3 {
+  font-size: 1.08em;
+}
+
+/* Bold and emphasis */
+.markdownContent strong {
+  color: var(--app-text-primary);
+  font-weight: 700;
+}
+
+.markdownContent em {
+  color: var(--app-text-secondary);
+  font-style: italic;
+}
+
+/* Lists — key styling for bullet-point answers */
+.markdownContent ul,
+.markdownContent ol {
+  padding-left: 24px;
+  margin: 10px 0;
+}
+
+.markdownContent ul {
+  list-style-type: disc;
+}
+
+.markdownContent li {
+  margin: 6px 0;
+  line-height: 1.7;
+  color: var(--app-text-primary);
+  padding-left: 4px;
+}
+
+.markdownContent li::marker {
+  color: var(--app-accent-primary);
+  font-weight: 700;
+}
+
+/* Nested lists */
+.markdownContent li > ul,
+.markdownContent li > ol {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* Inline code */
+.markdownContent code {
+  background-color: var(--app-code-bg);
+  color: var(--app-accent-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: "Fira Code", "Cascadia Code", monospace;
+}
+
+/* Code blocks */
+.markdownContent pre {
+  background-color: var(--app-code-bg);
+  border: 1px solid var(--app-code-border);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.markdownContent pre code {
+  background: none;
+  padding: 0;
+  color: var(--app-text-primary);
+  font-size: 0.85em;
+}
+
+/* Links */
+.markdownContent a {
+  color: var(--app-accent-primary);
+  text-decoration: none;
+}
+
+.markdownContent a:hover {
+  text-decoration: underline;
+}
+
+/* Paragraphs */
+.markdownContent p {
+  margin: 8px 0;
+  line-height: 1.75;
+}
+
+/* First paragraph — no top margin */
+.markdownContent > p:first-child {
+  margin-top: 0;
+}
+
+/* Horizontal rules */
+.markdownContent hr {
+  border: none;
+  border-top: 1px solid var(--app-border);
+  margin: 16px 0;
+}
+
+/* ── Source Citation Styles ─────────────────────────────────── */
+.sourcesPanel {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--app-border);
+}
+
+.sourcesLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 4px 6px 4px 0;
+  border-radius: 8px;
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent-border);
+  color: var(--app-text-primary);
+  font-size: 0.82em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.sourceChip:hover {
+  background: var(--app-accent-soft-hover);
+  border-color: var(--app-accent-border-strong);
+}
+
+.sourceChipIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--app-accent-primary);
+}
+
+.sourceChipText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+/* ── Pipeline Stage Indicator ──────────────────────────────── */
+.stageIndicator {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+  position: relative;
+}
+
+.stageItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82em;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: left center;
+  /* Default: pending (faded, small) */
+  color: var(--app-text-secondary);
+  opacity: 0.3;
+  transform: scale(0.88) translateX(0);
+}
+
+/* Active stage: bright, larger, prominent */
+.stageItem.stage_active {
+  color: var(--app-accent-primary);
+  opacity: 1;
+  transform: scale(1) translateX(4px);
+  background: var(--app-accent-soft);
+  font-weight: 600;
+}
+
+/* Done stage: faded up, smaller */
+.stageItem.stage_done {
+  color: var(--app-text-secondary);
+  opacity: 0.5;
+  transform: scale(0.92) translateX(0);
+}
+
+.stageDot {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid transparent;
+}
+
+/* Active dot: pulsing green glow */
+.stage_active .stageDot {
+  background: var(--app-accent-soft-hover);
+  border-color: var(--app-accent-primary);
+  animation: stagePulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--app-accent-glow);
+}
+
+/* Done dot: solid green check */
+.stage_done .stageDot {
+  background: var(--app-accent-soft);
+  border-color: var(--app-accent-border);
+  color: var(--app-accent-primary);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.stageLabel {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.stage_active .stageLabel {
+  font-weight: 600;
+}
+
+@keyframes stagePulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--app-accent-glow); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+@keyframes stageSlideIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Expandable Source Card ─────────────────────────────────── */
+.sourceCard {
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--app-source-card-bg);
+  border: 1px solid var(--app-source-card-border);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.sourceCard:hover {
+  background: var(--app-source-card-bg-hover);
+  border-color: var(--app-source-card-border-active);
+}
+
+.sourceCardExpanded {
+  border-color: var(--app-source-card-border-active);
+  background: var(--app-source-card-bg-hover);
+}
+
+.sourceCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sourceCardTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceCardFilename {
+  font-size: 0.88em;
+  font-weight: 600;
+  color: var(--app-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceCardDetail {
+  font-size: 0.78em;
+  color: var(--app-text-secondary);
+  font-weight: 400;
+}
+
+.sourceCardToggle {
+  font-size: 0.7em;
+  color: var(--app-text-tertiary);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.sourceCardBody {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--app-border);
+  font-size: 0.85em;
+  color: var(--app-text-secondary);
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.structuredResponse {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.structuredTitle {
+  margin: 0;
+  color: var(--app-text-primary);
+  font-size: clamp(1.15rem, 1.4vw, 1.4rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.summaryCard {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--app-accent-soft) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--app-accent-border);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.summaryIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--app-accent-primary);
+  margin-top: 4px;
+}
+
+.structuredSummary {
+  flex: 1;
+  color: var(--app-text-primary);
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+
+.structuredSummary p {
+  margin: 0;
+}
+
+.structuredSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionLabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-text-secondary);
+}
+
+.structuredList,
+.structuredListOrdered {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 10px;
+}
+
+.structuredList li::marker,
+.structuredListOrdered li::marker {
+  color: var(--app-accent-primary);
+  font-weight: 700;
+}
+
+.structuredListContent {
+  color: var(--app-text-primary);
+  line-height: 1.72;
+}
+
+.structuredListContent p {
+  margin: 0;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.comparisonRow {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--app-source-card-bg);
+  border: 1px solid var(--app-source-card-border);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.comparisonLabel {
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--app-text-primary);
+}
+
+.comparisonContent {
+  color: var(--app-text-secondary);
+  line-height: 1.68;
+}
+
+.comparisonContent p {
+  margin: 0;
+}
+
+.structuredNote {
+  border: 1px solid var(--app-border);
+}

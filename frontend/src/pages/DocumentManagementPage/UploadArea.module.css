@@ -1,0 +1,74 @@
+.dropzone {
+  border: 1px dashed var(--app-accent-border);
+  background:
+    linear-gradient(180deg, var(--app-surface), var(--app-surface)),
+    var(--app-surface);
+  border-radius: 20px;
+  padding: 18px;
+  transition:
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.dropzone:hover {
+  border-color: var(--app-accent-border-strong);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.inner {
+  min-height: 120px;
+}
+
+.copyGroup {
+  flex: 1;
+  min-width: 0;
+}
+
+.iconShell {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--app-accent-soft);
+  color: var(--app-accent-primary);
+  border: 1px solid var(--app-accent-border);
+  flex-shrink: 0;
+}
+
+.title {
+  color: var(--app-text-primary);
+}
+
+.copy,
+.metaLabel {
+  color: var(--app-text-secondary);
+}
+
+.meta {
+  min-width: 180px;
+  padding-left: 12px;
+  border-left: 1px solid var(--app-border);
+}
+
+.metaValue {
+  color: var(--app-text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .meta {
+    min-width: 0;
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--app-border);
+  }
+}
