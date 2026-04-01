@@ -22,6 +22,9 @@ that bi-encoders miss because they encode independently.
 
 import logging
 import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 import torch
 from FlagEmbedding import FlagReranker
@@ -40,6 +43,11 @@ class RerankerService:
     def __init__(self) -> None:
         self._model: FlagReranker | None = None
         self.start_time = time.time()
+        self._executor = ThreadPoolExecutor(
+            max_workers=settings.reranker_executor_workers,
+            thread_name_prefix="reranker-service",
+        )
+        self._async_gate: asyncio.Semaphore | None = None
 
     def load_model(self, model_name_or_path: str | None = None) -> None:
         """
@@ -171,6 +179,25 @@ class RerankerService:
         })
 
         return top_results
+
+    async def rerank_async(
+        self,
+        query: str,
+        documents: list[dict],
+        top_n: int,
+    ) -> list[dict]:
+        if self._async_gate is None:
+            self._async_gate = asyncio.Semaphore(1)
+
+        loop = asyncio.get_running_loop()
+        async with self._async_gate:
+            return await loop.run_in_executor(
+                self._executor,
+                partial(self.rerank, query=query, documents=documents, top_n=top_n),
+            )
+
+    def close(self) -> None:
+        self._executor.shutdown(wait=False, cancel_futures=True)
 
     @property
     def is_loaded(self) -> bool:

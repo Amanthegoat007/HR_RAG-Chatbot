@@ -20,6 +20,35 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def normalize_json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+async def _init_connection(conn: asyncpg.Connection) -> None:
+    await conn.set_type_codec(
+        "json",
+        schema="pg_catalog",
+        encoder=json.dumps,
+        decoder=json.loads,
+        format="text",
+    )
+    await conn.set_type_codec(
+        "jsonb",
+        schema="pg_catalog",
+        encoder=json.dumps,
+        decoder=json.loads,
+        format="text",
+    )
+
+
 async def create_db_pool() -> asyncpg.Pool:
     """
     Create the asyncpg connection pool used by both the API and worker.
@@ -32,6 +61,7 @@ async def create_db_pool() -> asyncpg.Pool:
         min_size=2,
         max_size=10,
         command_timeout=30,
+        init=_init_connection,
     )
 
 
@@ -81,7 +111,7 @@ async def create_document_record(
             minio_path,
             file_size_bytes,
             uploaded_by,
-            json.dumps(metadata),
+            metadata,
         )
     return document_id
 
@@ -125,7 +155,8 @@ async def update_document_status(
         if kwarg_key in kwargs:
             set_parts.append(f"{db_col} = ${param_idx}")
             if kwarg_key == "metadata":
-                params.append(json.dumps(kwargs[kwarg_key]))
+                set_parts[-1] = f"{db_col} = ${param_idx}::jsonb"
+                params.append(kwargs[kwarg_key])
             else:
                 params.append(kwargs[kwarg_key])
             param_idx += 1
@@ -161,7 +192,11 @@ async def get_document(
             "SELECT * FROM documents WHERE id = $1::uuid",
             document_id,
         )
-    return dict(row) if row else None
+    if not row:
+        return None
+    payload = dict(row)
+    payload["metadata"] = normalize_json_object(payload.get("metadata"))
+    return payload
 
 
 async def list_documents(
@@ -203,7 +238,12 @@ async def list_documents(
             )
             total = await conn.fetchval("SELECT COUNT(*) FROM documents")
 
-    return [dict(row) for row in rows], total
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        payload = dict(row)
+        payload["metadata"] = normalize_json_object(payload.get("metadata"))
+        normalized_rows.append(payload)
+    return normalized_rows, total
 
 
 async def delete_document_record(
@@ -320,7 +360,7 @@ async def write_audit_log(
                 INSERT INTO audit_log (event_type, role, username, ip_address, details)
                 VALUES ($1, $2, $3, $4, $5::jsonb)
                 """,
-                event_type, role, username, ip_address, json.dumps(details),
+                event_type, role, username, ip_address, details,
             )
     except Exception as exc:
         # Audit log failure must not block the main operation

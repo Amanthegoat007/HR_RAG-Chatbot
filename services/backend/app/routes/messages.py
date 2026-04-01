@@ -2,16 +2,15 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from starlette.responses import StreamingResponse
 import asyncpg
 import json
-import asyncio
-import httpx
 import logging
-from typing import List
 from datetime import datetime, timezone
 
 from app.models import MessageItem, MessageListResponse, SendMessageRequest, SendMessageResponse
+from app.config import settings
 from app.dependencies import require_auth
 from app import db
 from app.services.query_proxy import query_rag_pipeline, stream_rag_pipeline
+from app.maintenance import generate_conversation_title
 
 logger = logging.getLogger(__name__)
 
@@ -28,29 +27,15 @@ async def _verify_conversation_ownership(pool: asyncpg.Pool, conversation_id: st
     if not exists:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-async def _generate_and_save_title(pool: asyncpg.Pool, conversation_id: str, first_message: str):
-    """Generates a concise title using the LLM and updates the conversation."""
+
+def _enqueue_title_generation(conversation_id: str, first_message: str) -> None:
     try:
-        prompt = f"Generate a very concise, 3 to 5 word title for a conversation that starts with this message. Only return the title itself, no quotes, no conversational filler.\n\nMessage: {first_message}\n\nTitle:"
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post("http://llm:8080/v1/chat/completions", json={
-                "model": "local",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 15,
-                "temperature": 0.3,
-                "skip_special_tokens": True,
-                "chat_template_kwargs": {"enable_thinking": False},
-            })
-            if resp.status_code == 200:
-                data = resp.json()
-                title = data["choices"][0]["message"]["content"].strip().replace('"', '').replace("Title:", "").strip()
-                if title:
-                    async with pool.acquire() as conn:
-                        await conn.execute("UPDATE conversations SET title = $1 WHERE id = $2::uuid", title, conversation_id)
-    except Exception as e:
-        logger.warning(f"Failed to generate conversation title: {e}")
-
-
+        generate_conversation_title.delay(conversation_id, first_message)
+    except Exception as exc:
+        logger.warning(
+            "Failed to queue conversation title generation",
+            extra={"conversation_id": conversation_id, "error": str(exc)},
+        )
 
 @router.get("/{conversation_id}", response_model=MessageListResponse)
 async def get_messages(conversation_id: str, request: Request, payload: dict = Depends(require_auth)):
@@ -88,7 +73,7 @@ async def send_message(req: SendMessageRequest, request: Request, payload: dict 
     # Check if this is the first message to trigger title generation
     history_rows = await db.fetch_messages(pool, req.conversationId)
     if len(history_rows) == 1:
-        asyncio.create_task(_generate_and_save_title(pool, req.conversationId, req.message))
+        _enqueue_title_generation(req.conversationId, req.message)
     
     # 2. Fetch conversation history for multi-turn context
     conversation_history = [
@@ -101,16 +86,19 @@ async def send_message(req: SendMessageRequest, request: Request, payload: dict 
     ]
     
     # Extract role mapping (admin/user)
-    user_role = "admin" if user_id == "hr_admin" else "employee"
+    user_role = "admin" if user_id == settings.admin_username else "employee"
+    session_scope_active = await db.conversation_has_session_documents(pool, req.conversationId)
 
     # 3. Call RAG pipeline with conversation history
     assistant_result = await query_rag_pipeline(
         req.message, 
         conversation_history,
         req.conversationId,
+        http_client=request.app.state.http_client,
         db_pool=pool,
         user_role=user_role,
         reasoning_mode=req.reasoningMode,
+        session_scope_active=session_scope_active,
     )
     
     # 4. Save assistant message
@@ -154,7 +142,7 @@ async def stream_message(req: SendMessageRequest, request: Request, payload: dic
     # Check if this is the first message to trigger title generation
     history_rows = await db.fetch_messages(pool, req.conversationId)
     if len(history_rows) == 1:
-        asyncio.create_task(_generate_and_save_title(pool, req.conversationId, req.message))
+        _enqueue_title_generation(req.conversationId, req.message)
 
     # 2. Fetch conversation history
     conversation_history = [
@@ -173,15 +161,18 @@ async def stream_message(req: SendMessageRequest, request: Request, payload: dic
 
         full_text = ""
         assistant_metadata: dict = {}
-        user_role = "admin" if user_id == "hr_admin" else "employee"
+        user_role = "admin" if user_id == settings.admin_username else "employee"
+        session_scope_active = await db.conversation_has_session_documents(pool, req.conversationId)
         
         async for event in stream_rag_pipeline(
             req.message, 
             conversation_history,
             req.conversationId,
+            http_client=request.app.state.http_client,
             db_pool=pool,
             user_role=user_role,
             reasoning_mode=req.reasoningMode,
+            session_scope_active=session_scope_active,
         ):
             # Parse the event to check for the done event containing fullText
             if event.startswith("data: "):

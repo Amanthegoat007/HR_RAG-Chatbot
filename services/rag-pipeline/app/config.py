@@ -64,6 +64,7 @@ class RagSettings(BaseSettings):
     embedding_batch_size: int = 32
     embedding_max_length: int = 8192
     embedding_svc_url: str = "http://localhost:8004"  # Legacy, unused in consolidated mode
+    embedding_executor_workers: int = 1
 
     # ─── Reranker Model (In-Process BGE-Reranker) ─────────────────────────
     reranker_model_name: str = "BAAI/bge-reranker-v2-m3"
@@ -71,6 +72,7 @@ class RagSettings(BaseSettings):
     reranker_batch_size: int = 16
     reranker_svc_url: str = "http://localhost:8005"  # Legacy, unused in consolidated mode
     reranker_timeout_seconds: float = 30.0
+    reranker_executor_workers: int = 1
 
     # ─── Model Download / Cache Warmup ─────────────────────────────────────
     model_prefetch_on_startup: bool = True

@@ -35,9 +35,11 @@ from typing import Any
 import asyncpg
 import httpx
 import redis.asyncio as aioredis
+from celery.signals import worker_process_shutdown
 
 from app.celery_app import celery_app
 from app.config import settings
+from app.db import create_db_pool, normalize_json_object
 from app.file_converter import convert_to_markdown
 from app.chunker import chunk_markdown, DocumentChunk
 from app.metadata_extractor import build_document_metadata, build_chunk_payload
@@ -53,6 +55,12 @@ logger = logging.getLogger(__name__)
 # Batch size for embedding API calls
 # Sending all chunks in one batch is most efficient, but caps at 128 (embedding-svc limit)
 EMBED_BATCH_SIZE = 32
+CACHE_GENERATION_LIBRARY_KEY = "cache_generation:library"
+CACHE_GENERATION_CONVERSATION_PREFIX = "cache_generation:conversation:"
+
+_db_pool: asyncpg.Pool | None = None
+_http_client: httpx.AsyncClient | None = None
+_redis_client: aioredis.Redis | None = None
 
 
 def _get_event_loop() -> asyncio.AbstractEventLoop:
@@ -105,22 +113,67 @@ async def _embed_chunks(
     return all_results
 
 
-async def _invalidate_semantic_cache() -> None:
-    redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
-    try:
-        cursor = 0
-        while True:
-            cursor, keys = await redis_client.scan(
-                cursor=cursor,
-                match="semantic_cache:*",
-                count=100,
-            )
-            if keys:
-                await redis_client.delete(*keys)
-            if cursor == 0:
-                break
-    finally:
-        await redis_client.close()
+async def _get_db_pool() -> asyncpg.Pool:
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await create_db_pool()
+    return _db_pool
+
+
+async def _get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(120.0, connect=10.0),
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _http_client
+
+
+async def _get_redis_client() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = aioredis.from_url(settings.redis_url, decode_responses=False)
+    return _redis_client
+
+
+async def _close_worker_resources() -> None:
+    global _db_pool, _http_client, _redis_client
+    if _http_client is not None:
+        await _http_client.aclose()
+        _http_client = None
+    if _redis_client is not None:
+        await _redis_client.aclose()
+        _redis_client = None
+    if _db_pool is not None:
+        await _db_pool.close()
+        _db_pool = None
+
+
+@worker_process_shutdown.connect
+def _on_worker_process_shutdown(*_args, **_kwargs) -> None:
+    loop = _get_event_loop()
+    loop.run_until_complete(_close_worker_resources())
+
+
+def _extract_scope(metadata: dict[str, Any]) -> str:
+    if metadata.get("scope") == "session" or metadata.get("conversation_id") or metadata.get("session_id"):
+        return "session"
+    return "library"
+
+
+def _extract_conversation_id(metadata: dict[str, Any]) -> str | None:
+    return metadata.get("conversation_id") or metadata.get("session_id")
+
+
+async def _bump_cache_generation_for_document(metadata: dict[str, Any]) -> None:
+    redis_client = await _get_redis_client()
+    if _extract_scope(metadata) == "session":
+        conversation_id = _extract_conversation_id(metadata)
+        if conversation_id:
+            await redis_client.incr(f"{CACHE_GENERATION_CONVERSATION_PREFIX}{conversation_id}")
+            return
+    await redis_client.incr(CACHE_GENERATION_LIBRARY_KEY)
 
 
 async def process_document_async(
@@ -131,9 +184,10 @@ async def process_document_async(
     Shared document processing pipeline used by Celery and the manual backfill script.
     """
     task_start = time.time()
-    db_pool = await asyncpg.create_pool(dsn=settings.postgres_dsn, min_size=1, max_size=3)
+    db_pool = await _get_db_pool()
     minio_client = get_minio_client()
     qdrant_client = get_qdrant_client()
+    http_client = await _get_http_client()
 
     try:
         from app.db import get_document, update_document_status, update_ingestion_job, write_audit_log
@@ -144,6 +198,7 @@ async def process_document_async(
 
         filename = doc["filename"]
         minio_path = doc["minio_path"]
+        document_metadata_state = normalize_json_object(doc.get("metadata"))
 
         await update_document_status(db_pool, document_id, "processing", error_message=None)
         await update_ingestion_job(
@@ -192,10 +247,10 @@ async def process_document_async(
             file_size_bytes=doc["file_size_bytes"],
             chunk_count=len(chunks),
         )
+        document_metadata = {**document_metadata_state, **document_metadata}
 
         step_start = time.time()
-        async with httpx.AsyncClient(timeout=120.0) as http_client:
-            embed_results = await _embed_chunks(chunks, http_client)
+        embed_results = await _embed_chunks(chunks, http_client)
         embedding_time = time.time() - step_start
 
         logger.info("Embedding complete", extra={
@@ -256,7 +311,7 @@ async def process_document_async(
                 "processing_time_s": round(total_time, 2),
             },
         )
-        await _invalidate_semantic_cache()
+        await _bump_cache_generation_for_document(document_metadata_state)
 
         result = {
             "status": "completed",
@@ -299,9 +354,6 @@ async def process_document_async(
             details={"document_id": document_id, "error": error_msg},
         )
         raise
-
-    finally:
-        await db_pool.close()
 
 
 @celery_app.task(
@@ -382,9 +434,12 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
     async def _run_delete():
         minio_client = get_minio_client()
         qdrant_client = get_qdrant_client()
-        db_pool = await asyncpg.create_pool(dsn=settings.postgres_dsn, min_size=1, max_size=3)
+        db_pool = await _get_db_pool()
 
         try:
+            from app.db import get_document, delete_document_record, write_audit_log
+            doc = await get_document(db_pool, document_id)
+            metadata = normalize_json_object((doc or {}).get("metadata"))
             # Delete Qdrant vectors first
             vectors_deleted = delete_document_vectors(qdrant_client, document_id)
 
@@ -392,7 +447,6 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
             minio_deleted = delete_document_files(minio_client, document_id)
 
             # Delete PostgreSQL record (cascade deletes ingestion_jobs)
-            from app.db import delete_document_record, write_audit_log
             await delete_document_record(db_pool, document_id)
 
             await write_audit_log(
@@ -400,7 +454,7 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
                 role=None, username=None, ip_address=None,
                 details={"document_id": document_id, "filename": filename},
             )
-            await _invalidate_semantic_cache()
+            await _bump_cache_generation_for_document(metadata)
 
             logger.info("Document deleted successfully", extra={"document_id": document_id})
             return {
@@ -409,9 +463,8 @@ def delete_document(self, document_id: str, filename: str) -> dict[str, Any]:
                 "vectors_deleted": vectors_deleted,
                 "minio_deleted": minio_deleted,
             }
-
-        finally:
-            await db_pool.close()
+        except Exception:
+            raise
 
     try:
         return loop.run_until_complete(_run_delete())

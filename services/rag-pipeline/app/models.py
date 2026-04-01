@@ -10,6 +10,7 @@ class QueryRequest(BaseModel):
     conversation_history: List[Dict[str, Any]] = Field(default_factory=list, description="Previous conversation turns for multi-turn context")
     user_role: str = Field("employee", description="Role of the user (e.g., admin, employee) to adjust response persona")
     reasoning_mode: Optional[Literal["fast", "deep"]] = Field(None, description="Optional reasoning mode override for the answer generation")
+    session_scope_active: bool = Field(False, description="Whether the conversation currently has active session-scoped documents")
     
 class HealthResponse(BaseModel):
     status: str

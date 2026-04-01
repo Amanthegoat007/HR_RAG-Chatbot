@@ -39,6 +39,12 @@ logger = logging.getLogger(__name__)
 
 # Redis key prefix for all semantic cache entries
 CACHE_PREFIX = "semantic_cache:"
+LIBRARY_GENERATION_KEY = "cache_generation:library"
+CONVERSATION_GENERATION_PREFIX = "cache_generation:conversation:"
+
+
+def conversation_generation_key(conversation_id: str) -> str:
+    return f"{CONVERSATION_GENERATION_PREFIX}{conversation_id}"
 
 
 def _normalize(vector: list[float]) -> np.ndarray:
@@ -100,10 +106,45 @@ class SemanticCache:
         self.ttl_seconds = ttl_seconds
         self.max_entries = max_entries
 
+    async def get_generation_snapshot(
+        self,
+        conversation_id: str | None = None,
+    ) -> tuple[int, int | None]:
+        if self._client is None:
+            return 0, None
+
+        try:
+            library_raw = await self._client.get(LIBRARY_GENERATION_KEY)
+            library_generation = int(library_raw or 0)
+        except Exception:
+            library_generation = 0
+
+        if not conversation_id:
+            return library_generation, None
+
+        try:
+            conversation_raw = await self._client.get(conversation_generation_key(conversation_id))
+            conversation_generation = int(conversation_raw or 0)
+        except Exception:
+            conversation_generation = 0
+
+        return library_generation, conversation_generation
+
+    @staticmethod
+    def _cache_key_prefix(
+        partition: str,
+        library_generation: int,
+        conversation_generation: int | None,
+    ) -> str:
+        conversation_segment = str(conversation_generation) if conversation_generation is not None else "global"
+        return f"{CACHE_PREFIX}{partition}:lib:{library_generation}:conv:{conversation_segment}:"
+
     async def get(
         self,
         query_embedding: list[float],
         partition: str = "fast",
+        library_generation: int = 0,
+        conversation_generation: int | None = None,
     ) -> Optional[dict[str, Any]]:
         """
         Check if a semantically similar query exists in the cache.
@@ -138,7 +179,7 @@ class SemanticCache:
             while True:
                 cursor, keys = await self._client.scan(
                     cursor=cursor,
-                    match=f"{CACHE_PREFIX}{partition}:*",
+                    match=f"{self._cache_key_prefix(partition, library_generation, conversation_generation)}*",
                     count=100,  # Process 100 keys per iteration
                 )
 
@@ -195,6 +236,8 @@ class SemanticCache:
         sources: list[dict],
         meta: dict[str, Any] | None = None,
         partition: str = "fast",
+        library_generation: int = 0,
+        conversation_generation: int | None = None,
     ) -> None:
         """
         Store a query-answer pair in the semantic cache.
@@ -227,7 +270,10 @@ class SemanticCache:
             # Key collision is theoretically possible but negligible for 1000 entries
             import hashlib
             key_hash = hashlib.md5(json.dumps(normalized[:10]).encode()).hexdigest()
-            cache_key = f"{CACHE_PREFIX}{partition}:{key_hash}"
+            cache_key = (
+                f"{self._cache_key_prefix(partition, library_generation, conversation_generation)}"
+                f"{key_hash}"
+            )
 
             # Store with TTL
             await self._client.setex(

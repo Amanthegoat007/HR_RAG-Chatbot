@@ -15,20 +15,11 @@ import {
   TbCornerDownRight,
   TbFileDescription,
   TbCheck,
-  TbVolume,
-  TbPlayerStopFilled,
 } from "react-icons/tb";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useClipboard } from "@mantine/hooks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  speakText,
-  stopSpeaking,
-  subscribeToSpeechPlayback,
-  supportsSpeechSynthesis,
-} from "@/utils/browserSpeechSynthesis";
 
 import { parseMessageContent } from "@/utils/contentParser";
 import { ChatTable } from "../ChatTable";
@@ -65,6 +56,43 @@ function dispatchPromptFill(prompt: string) {
 
 function hasRenderableStructuredPayload(payload: any): boolean {
   return Boolean(payload?.blocks?.some((block: any) => block?.type !== "title"));
+}
+
+async function writeTextToClipboard(text: string): Promise<boolean> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+
+  if (navigator?.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back for non-secure contexts or restricted clipboard permissions.
+    }
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "fixed";
+    textarea.style.top = "0";
+    textarea.style.left = "-9999px";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return copied;
+  } catch {
+    return false;
+  }
 }
 
 function normalizeAssistantMarkdown(rawText: string): string {
@@ -527,7 +555,6 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const isUser = role === "user";
   const reducedMotion = useReducedMotion();
-  const speechPlaybackId = useId();
   const rowClassName = [
     classes.messageRow,
     isUser ? classes.messageRowUser : classes.messageRowAssistant,
@@ -559,8 +586,8 @@ export default function MessageBubble({
         label: prompt,
         prompt,
       }));
-
-  const clipboard = useClipboard({ timeout: 2000 });
+  const [copied, setCopied] = useState(false);
+  const copyResetTimeoutRef = useRef<number | null>(null);
 
   const getCopyableText = () => {
     const attachmentRegex =
@@ -573,45 +600,35 @@ export default function MessageBubble({
     return content.text.trim();
   };
 
-  const [playing, setPlaying] = useState(false);
-  const canSpeak = supportsSpeechSynthesis();
-
-  useEffect(() => {
-    return subscribeToSpeechPlayback((snapshot) => {
-      setPlaying(snapshot.activeId === speechPlaybackId);
-    });
-  }, [speechPlaybackId]);
-
   useEffect(() => {
     return () => {
-      stopSpeaking(speechPlaybackId);
+      if (copyResetTimeoutRef.current !== null) {
+        window.clearTimeout(copyResetTimeoutRef.current);
+      }
     };
-  }, [speechPlaybackId]);
+  }, []);
 
-  const handleSpeak = () => {
-    if (!canSpeak) {
+  const handleCopy = async () => {
+    const copyableText = getCopyableText();
+    if (!copyableText) {
       return;
     }
 
-    if (playing) {
-      stopSpeaking(speechPlaybackId);
+    const success = await writeTextToClipboard(copyableText);
+    if (!success) {
       return;
     }
 
-    try {
-      const language = content.extras?.language || "en";
-      speakText({
-        id: speechPlaybackId,
-        text: getCopyableText(),
-        lang: language,
-        onError: () => {
-          setPlaying(false);
-        },
-      });
-    } catch (error) {
-      console.error("Playback failed:", error);
-      setPlaying(false);
+    setCopied(true);
+
+    if (copyResetTimeoutRef.current !== null) {
+      window.clearTimeout(copyResetTimeoutRef.current);
     }
+
+    copyResetTimeoutRef.current = window.setTimeout(() => {
+      setCopied(false);
+      copyResetTimeoutRef.current = null;
+    }, 2000);
   };
 
   if (loading && !text.trim() && !structuredPayload) {
@@ -818,21 +835,16 @@ export default function MessageBubble({
             <Box mt="md">
               <TryNextSuggestions suggestions={relatedSuggestions} />
 
-              {/* Action Icons: Download, Copy, Refresh */}
+              {/* Action Icons */}
               <Group gap="sm" mb="md">
-                {/* <ActionIcon variant="subtle" color="gray" size="sm">
-                    <TbDownload size={16} />
-                  </ActionIcon> */}
-                <Tooltip
-                  label={clipboard.copied ? "Copied!" : "Copy to clipboard"}
-                >
+                <Tooltip label={copied ? "Copied!" : "Copy to clipboard"}>
                   <ActionIcon
                     variant="subtle"
-                    color={clipboard.copied ? "green" : "gray"}
+                    color={copied ? "green" : "gray"}
                     size="sm"
-                    onClick={() => clipboard.copy(getCopyableText())}
+                    onClick={handleCopy}
                   >
-                    {clipboard.copied ? (
+                    {copied ? (
                       <TbCheck size={16} />
                     ) : (
                       <TbCopy size={16} />
@@ -848,29 +860,6 @@ export default function MessageBubble({
                     disabled={!onRefresh}
                   >
                     <TbRefresh size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip
-                  label={
-                    canSpeak
-                      ? playing
-                        ? "Stop reading"
-                        : "Read message"
-                      : "Browser speech playback is unavailable here"
-                  }
-                >
-                  <ActionIcon
-                    variant="subtle"
-                    color={playing ? "red" : "gray"}
-                    size="sm"
-                    onClick={handleSpeak}
-                    disabled={!canSpeak}
-                  >
-                    {playing ? (
-                      <TbPlayerStopFilled size={16} />
-                    ) : (
-                      <TbVolume size={16} />
-                    )}
                   </ActionIcon>
                 </Tooltip>
               </Group>

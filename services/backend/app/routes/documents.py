@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import uuid
-import asyncio
 import logging
 from pathlib import Path
 from typing import Optional, Literal
@@ -51,7 +49,7 @@ def _extract_conversation_id(metadata: dict) -> str | None:
 
 
 def _serialize_document(row: dict) -> DocumentMetadata:
-    metadata = json.loads(row.get("metadata", "{}")) if isinstance(row.get("metadata"), str) else row.get("metadata", {})
+    metadata = db.normalize_json_object(row.get("metadata"))
     return DocumentMetadata(
         id=str(row["id"]),
         filename=row["filename"],
@@ -60,7 +58,7 @@ def _serialize_document(row: dict) -> DocumentMetadata:
         file_size_bytes=row["file_size_bytes"],
         page_count=row["page_count"],
         chunk_count=row["chunk_count"] or 0,
-        uploaded_by=row["uploaded_by"] or "hr_admin",
+        uploaded_by=row["uploaded_by"] or settings.admin_username,
         uploaded_at=row["uploaded_at"],
         processed_at=row.get("processed_at"),
         error_message=row.get("error_message"),
@@ -111,6 +109,7 @@ async def _create_document_upload(
     document_id = str(uuid.uuid4())
     db_pool: asyncpg.Pool = request.app.state.db_pool
     minio_client = request.app.state.minio_client
+    http_client: httpx.AsyncClient = request.app.state.http_client
 
     if scope == "session" and conversation_id and not _is_admin(payload):
         async with db_pool.acquire() as conn:
@@ -142,7 +141,7 @@ async def _create_document_upload(
     )
 
     try:
-        task_id, job_id = await _enqueue_processing(document_id)
+        task_id, job_id = await _enqueue_processing(http_client, document_id)
     except Exception as exc:
         await db.update_document_status(
             db_pool,
@@ -195,56 +194,20 @@ async def _create_document_upload(
     )
 
 
-async def _enqueue_processing(document_id: str) -> tuple[str, str]:
+async def _enqueue_processing(http_client: httpx.AsyncClient, document_id: str) -> tuple[str, str]:
     url = f"{settings.document_ingest_url}/ingest/internal/enqueue/{document_id}"
     headers = {"X-Ingest-Token": settings.ingest_internal_token}
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, headers=headers)
-        response.raise_for_status()
-        payload = response.json()
+    response = await http_client.post(url, headers=headers)
+    response.raise_for_status()
+    payload = response.json()
     return payload.get("task_id", ""), payload.get("job_id", "")
 
 
-async def _enqueue_delete(document_id: str) -> None:
+async def _enqueue_delete(http_client: httpx.AsyncClient, document_id: str) -> None:
     url = f"{settings.document_ingest_url}/ingest/internal/delete/{document_id}"
     headers = {"X-Ingest-Token": settings.ingest_internal_token}
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, headers=headers)
-        response.raise_for_status()
-
-
-async def cleanup_expired_sessions(app) -> None:
-    """Background task to delete session documents older than 24 hours."""
-    while True:
-        try:
-            db_pool = app.state.db_pool
-            async with db_pool.acquire() as conn:
-                rows = await conn.fetch(
-                    """
-                    SELECT id FROM documents 
-                    WHERE metadata->>'scope' = 'session'
-                      AND uploaded_at < NOW() - INTERVAL '24 hours'
-                    """
-                )
-            
-            deleted_count = 0
-            for row in rows:
-                doc_id = str(row["id"])
-                try:
-                    await _enqueue_delete(doc_id)
-                    deleted_count += 1
-                except Exception as exc:
-                    logger.warning("Failed to delete expired session document", extra={"doc_id": doc_id, "error": str(exc)})
-            
-            if deleted_count > 0:
-                logger.info("Cleaned up expired session documents", extra={"deleted_count": deleted_count})
-                
-        except asyncio.CancelledError:
-            break
-        except Exception as exc:
-            logger.error("Error in cleanup_expired_sessions task", extra={"error": str(exc)})
-            
-        await asyncio.sleep(3600)  # run once an hour
+    response = await http_client.post(url, headers=headers)
+    response.raise_for_status()
 
 
 @router.post("/upload", response_model=UploadResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -384,7 +347,7 @@ async def delete_session_files(
     for row in rows:
         doc_id = str(row["id"])
         try:
-            await _enqueue_delete(doc_id)
+            await _enqueue_delete(request.app.state.http_client, doc_id)
             deleted_count += 1
         except Exception as exc:
             pass # continue deleting others
@@ -421,7 +384,7 @@ async def delete_document_endpoint(
         )
 
     filename = doc["filename"]
-    metadata = json.loads(doc.get("metadata", "{}")) if isinstance(doc.get("metadata"), str) else doc.get("metadata", {})
+    metadata = db.normalize_json_object(doc.get("metadata"))
     scope = _extract_scope(metadata)
 
     if scope == "library" and not _is_admin(payload):
@@ -438,7 +401,7 @@ async def delete_document_endpoint(
             raise HTTPException(status_code=403, detail="You do not have permission to delete this document")
 
     try:
-        await _enqueue_delete(document_id)
+        await _enqueue_delete(request.app.state.http_client, document_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail="Failed to queue document deletion") from exc
 

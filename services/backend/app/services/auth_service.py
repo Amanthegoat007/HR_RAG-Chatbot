@@ -19,10 +19,10 @@ def authenticate_user(username: str, password: str):
     """
     if username == settings.admin_username:
         if verify_password(password, settings.admin_password_hash):
-            return "hr_admin", "admin"
+            return settings.admin_username, "admin"
             
     elif username == settings.user_username:
         if verify_password(password, settings.user_password_hash):
-            return "hr_user", "user"
+            return settings.user_username, "user"
             
     return None, None

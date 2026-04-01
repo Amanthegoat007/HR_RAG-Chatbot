@@ -25,6 +25,9 @@ Optimization techniques applied:
 
 import logging
 import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from typing import Any
 
 import torch
@@ -50,6 +53,11 @@ class EmbeddingService:
         self._model: BGEM3FlagModel | None = None
         self._load_time: float | None = None
         self.start_time = time.time()
+        self._executor = ThreadPoolExecutor(
+            max_workers=settings.embedding_executor_workers,
+            thread_name_prefix="embedding-service",
+        )
+        self._async_gate: asyncio.Semaphore | None = None
 
     def load_model(self, model_name_or_path: str | None = None) -> None:
         """
@@ -199,6 +207,24 @@ class EmbeddingService:
             })
 
         return results
+
+    async def embed_texts_async(
+        self,
+        texts: list[str],
+        batch_size: int | None = None,
+    ) -> list[dict[str, Any]]:
+        if self._async_gate is None:
+            self._async_gate = asyncio.Semaphore(1)
+
+        loop = asyncio.get_running_loop()
+        async with self._async_gate:
+            return await loop.run_in_executor(
+                self._executor,
+                partial(self.embed_texts, texts=texts, batch_size=batch_size),
+            )
+
+    def close(self) -> None:
+        self._executor.shutdown(wait=False, cancel_futures=True)
 
     @property
     def is_loaded(self) -> bool:

@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import AsyncGenerator, Optional
 
 import asyncpg
+import httpx
 from fastapi import (
     Depends, FastAPI, File, Header, HTTPException, Request,
     UploadFile, status
@@ -36,24 +37,9 @@ from shared.logging_config import setup_logging, get_logger, set_correlation_id
 
 from app.config import settings
 
-import json as _json
-
-def _safe_metadata(val) -> dict:
-    """Safely convert asyncpg JSONB return value to a dict."""
-    if not val:
-        return {}
-    if isinstance(val, dict):
-        return val
-    if isinstance(val, str):
-        try:
-            return _json.loads(val)
-        except (ValueError, TypeError):
-            return {}
-    return {}
-
 from app.db import (
     create_db_pool, create_document_record, get_document,
-    list_documents, write_audit_log, create_ingestion_job
+    list_documents, write_audit_log, create_ingestion_job, normalize_json_object
 )
 from app.minio_client import get_minio_client, ensure_bucket_exists, upload_file
 from app.qdrant_client_wrapper import get_qdrant_client, ensure_collection_exists
@@ -124,6 +110,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     db_pool = await create_db_pool()
     app.state.db_pool = db_pool
+    app.state.http_client = httpx.AsyncClient(
+        timeout=httpx.Timeout(30.0, connect=5.0),
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+    )
 
     minio_client = get_minio_client()
     ensure_bucket_exists(minio_client, settings.minio_bucket_name)
@@ -136,6 +126,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Ingest service ready")
     yield
 
+    await app.state.http_client.aclose()
     await db_pool.close()
     logger.info("Ingest service shutdown complete")
 
@@ -378,11 +369,11 @@ async def list_all_documents(
             file_size_bytes=row["file_size_bytes"],
             page_count=row["page_count"],
             chunk_count=row["chunk_count"] or 0,
-            uploaded_by=row["uploaded_by"] or "hr_admin",
+            uploaded_by=row["uploaded_by"] or os.getenv("ADMIN_USERNAME", "hr_admin"),
             uploaded_at=row["uploaded_at"],
             processed_at=row.get("processed_at"),
             error_message=row.get("error_message"),
-            metadata=_safe_metadata(row["metadata"]),
+            metadata=normalize_json_object(row["metadata"]),
         ))
 
     return DocumentListResponse(documents=documents, total=total)
@@ -412,11 +403,11 @@ async def get_document_status(
         file_size_bytes=doc["file_size_bytes"],
         page_count=doc["page_count"],
         chunk_count=doc["chunk_count"] or 0,
-        uploaded_by=doc["uploaded_by"] or "hr_admin",
+        uploaded_by=doc["uploaded_by"] or os.getenv("ADMIN_USERNAME", "hr_admin"),
         uploaded_at=doc["uploaded_at"],
         processed_at=doc.get("processed_at"),
         error_message=doc.get("error_message"),
-        metadata=_safe_metadata(doc["metadata"]),
+        metadata=normalize_json_object(doc["metadata"]),
     )
 
 
@@ -467,40 +458,55 @@ async def delete_document_endpoint(
     )
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health(request: Request) -> HealthResponse:
-    """Health check including PostgreSQL, MinIO, and Qdrant connectivity."""
-    statuses = {}
-
-    # Check PostgreSQL
+async def _http_dependency_status(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    timeout: float = 5.0,
+    expect_json_status: bool = False,
+) -> str:
     try:
-        db_pool: asyncpg.Pool = request.app.state.db_pool
+        response = await client.get(url, timeout=timeout)
+        if response.status_code >= 400:
+            return "unhealthy"
+        if expect_json_status:
+            payload = response.json()
+            return "healthy" if payload.get("status") == "healthy" else "unhealthy"
+        return "healthy"
+    except Exception:
+        return "unhealthy"
+
+
+async def _ingest_dependency_statuses(request: Request) -> dict[str, str]:
+    statuses: dict[str, str] = {}
+    db_pool: asyncpg.Pool = request.app.state.db_pool
+    http_client: httpx.AsyncClient = request.app.state.http_client
+
+    try:
         async with db_pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
         statuses["postgres"] = "healthy"
-    except Exception as exc:
-        statuses["postgres"] = f"unhealthy: {exc}"
-
-    # Check MinIO
-    try:
-        import httpx
-        async with httpx.AsyncClient(timeout=5.0) as c:
-            r = await c.get(f"{settings.minio_endpoint_url}/minio/health/live")
-            statuses["minio"] = "healthy" if r.status_code == 200 else "unhealthy"
     except Exception:
-        statuses["minio"] = "unhealthy"
+        statuses["postgres"] = "unhealthy"
 
-    # Check Qdrant
-    try:
-        import httpx
-        async with httpx.AsyncClient(timeout=5.0) as c:
-            r = await c.get(f"{settings.qdrant_url}/healthz")
-            statuses["qdrant"] = "healthy" if r.status_code == 200 else "unhealthy"
-    except Exception:
-        statuses["qdrant"] = "unhealthy"
+    statuses["minio"] = await _http_dependency_status(
+        http_client,
+        f"{settings.minio_endpoint_url}/minio/health/live",
+    )
+    statuses["qdrant"] = await _http_dependency_status(
+        http_client,
+        f"{settings.qdrant_url}/healthz",
+    )
+    statuses["embedding"] = await _http_dependency_status(
+        http_client,
+        f"{settings.embedding_svc_url}/ready",
+        expect_json_status=True,
+    )
+    return statuses
 
-    overall = "healthy" if all(v == "healthy" for v in statuses.values()) else "degraded"
 
+def _health_response(statuses: dict[str, str]) -> HealthResponse:
+    overall = "healthy" if all(value == "healthy" for value in statuses.values()) else "degraded"
     return HealthResponse(
         status=overall,
         service=settings.service_name,
@@ -508,3 +514,24 @@ async def health(request: Request) -> HealthResponse:
         uptime_seconds=round(time.time() - _start_time, 1),
         dependencies=statuses,
     )
+
+
+@app.get("/live")
+async def live() -> dict[str, object]:
+    return {
+        "status": "live",
+        "service": settings.service_name,
+        "version": settings.service_version,
+        "uptime_seconds": round(time.time() - _start_time, 1),
+    }
+
+
+@app.get("/ready", response_model=HealthResponse)
+async def ready(request: Request) -> HealthResponse:
+    return _health_response(await _ingest_dependency_statuses(request))
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health(request: Request) -> HealthResponse:
+    """Backward-compatible readiness endpoint."""
+    return await ready(request)

@@ -354,6 +354,7 @@ async def run_query_pipeline(
     conversation_id: Optional[str] = None,
     user_role: str = "employee",
     session_id: Optional[str] = None,
+    session_scope_active: bool = False,
     reasoning_mode: Optional[Literal["fast", "deep"]] = None,
 ) -> AsyncGenerator[Any, None]:
     """
@@ -401,7 +402,7 @@ async def run_query_pipeline(
         http_client=http_client,
         cache=context_resolution_cache,
         conversation_id=conversation_id,
-        session_scope_active=session_id is not None,
+        session_scope_active=session_scope_active,
     )
     question_type = classify_question(
         context_resolution.standalone_query or normalized_query,
@@ -443,7 +444,7 @@ async def run_query_pipeline(
         if hyde_doc:
             texts_to_embed.append(hyde_doc)
             
-        embed_results = embedding_service.embed_texts(
+        embed_results = await embedding_service.embed_texts_async(
             texts=texts_to_embed,
             batch_size=len(texts_to_embed)
         )
@@ -470,8 +471,18 @@ async def run_query_pipeline(
     # Check cache using the dense embedding as the lookup key
     # Only use cache for non-document-scoped queries (document-scoped answers
     # are document-specific and should not cross-contaminate the cache)
+    library_generation = 0
+    conversation_generation: int | None = None
     if not document_id:
-        cached_result = await cache.get(dense_vector, partition=requested_reasoning_mode)
+        library_generation, conversation_generation = await cache.get_generation_snapshot(
+            conversation_id if session_scope_active else None
+        )
+        cached_result = await cache.get(
+            dense_vector,
+            partition=requested_reasoning_mode,
+            library_generation=library_generation,
+            conversation_generation=conversation_generation,
+        )
         if cached_result:
             logger.info("Cache HIT — returning cached answer")
             cached_answer = strip_leading_reasoning_artifacts(cached_result.get("answer", ""))
@@ -505,6 +516,7 @@ async def run_query_pipeline(
     try:
         retrieved_chunks = await hybrid_search(
             qdrant_client=qdrant_client,
+            http_client=http_client,
             dense_vector=dense_vector,
             sparse_indices=sparse_indices,
             sparse_values=sparse_values,
@@ -574,7 +586,7 @@ async def run_query_pipeline(
             for chunk in retrieved_chunks
         ]
         
-        ranked = reranker_service.rerank(
+        ranked = await reranker_service.rerank_async(
             query=standalone_query,
             documents=docs_for_reranker,
             top_n=rerank_top_n,
@@ -672,6 +684,8 @@ async def run_query_pipeline(
                     sources=source_chunks,
                     meta=response_meta,
                     partition=response_meta["effective_reasoning_mode"],
+                    library_generation=library_generation,
+                    conversation_generation=conversation_generation,
                 )
                 logger.debug("Deterministic answer stored in semantic cache")
             except Exception as exc:
@@ -841,6 +855,8 @@ async def run_query_pipeline(
                 sources=source_chunks,
                 meta=response_meta,
                 partition=response_meta["effective_reasoning_mode"],
+                library_generation=library_generation,
+                conversation_generation=conversation_generation,
             )
             logger.debug("Answer stored in semantic cache")
         except Exception as exc:

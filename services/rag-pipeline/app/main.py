@@ -84,8 +84,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     await app.state.qdrant_client.close()
-    await app.state.cache._client.close()
+    await app.state.cache._client.aclose()
     await app.state.http_client.aclose()
+    embedding_service.close()
+    reranker_service.close()
 
 
 app = FastAPI(
@@ -115,7 +117,7 @@ async def embed_texts(request: EmbedRequest):
     if not embedding_service.is_loaded:
         raise HTTPException(status_code=503, detail="Embedding model not loaded yet")
 
-    results = embedding_service.embed_texts(request.texts)
+    results = await embedding_service.embed_texts_async(request.texts)
     return {"results": results}
 
 
@@ -141,6 +143,7 @@ async def query(request: QueryRequest, req: Request):
         conversation_id=request.conversation_id,
         user_role=getattr(request, "user_role", "employee"),
         session_id=session_id,
+        session_scope_active=getattr(request, "session_scope_active", False),
         reasoning_mode=getattr(request, "reasoning_mode", None),
     )
 
@@ -161,34 +164,64 @@ async def query(request: QueryRequest, req: Request):
     else:
         raise HTTPException(status_code=400, detail="Use stream=True")
 
-@app.get("/health", response_model=HealthResponse)
-async def health(request: Request):
-    models_loaded = embedding_service.is_loaded and reranker_service.is_loaded
-    statuses = {}
-    
-    # Qdrant
+async def _http_dependency_status(client: httpx.AsyncClient, url: str, timeout: float = 2.0) -> str:
     try:
-        async with httpx.AsyncClient(timeout=2.0) as c:
-            r = await c.get(f"{settings.qdrant_url}/healthz")
-            statuses["qdrant"] = "healthy" if r.status_code == 200 else "unhealthy"
+        response = await client.get(url, timeout=timeout)
+        return "healthy" if response.status_code < 400 else "unhealthy"
     except Exception:
-        statuses["qdrant"] = "unhealthy"
-        
-    # Local LLM Supervised Process
-    try:
-        async with httpx.AsyncClient(timeout=2.0) as c:
-            r = await c.get(f"{settings.llm_server_url}/health")
-            statuses["llama-server"] = "healthy" if r.status_code == 200 else "unhealthy"
-    except Exception:
-        statuses["llama-server"] = "unhealthy"
+        return "unhealthy"
 
-    overall = "healthy" if all(v == "healthy" for v in statuses.values()) and models_loaded else "degraded"
-    
+
+async def _rag_dependency_statuses(request: Request) -> tuple[dict[str, str], bool]:
+    http_client: httpx.AsyncClient = request.app.state.http_client
+    statuses: dict[str, str] = {}
+
+    try:
+        pong = await request.app.state.redis_client.ping()
+        statuses["redis"] = "healthy" if pong else "unhealthy"
+    except Exception:
+        statuses["redis"] = "unhealthy"
+
+    statuses["qdrant"] = await _http_dependency_status(
+        http_client,
+        f"{settings.qdrant_url}/healthz",
+    )
+    statuses["llama-server"] = await _http_dependency_status(
+        http_client,
+        f"{settings.llm_server_url}/health",
+    )
+    models_loaded = embedding_service.is_loaded and reranker_service.is_loaded
+    return statuses, models_loaded
+
+
+def _health_response(statuses: dict[str, str], models_loaded: bool) -> HealthResponse:
+    overall = "healthy" if all(value == "healthy" for value in statuses.values()) and models_loaded else "degraded"
     return HealthResponse(
         status=overall,
         service=settings.service_name,
         version=settings.service_version,
         uptime_seconds=round(time.time() - _start_time, 1),
         dependencies=statuses,
-        models_loaded=models_loaded
+        models_loaded=models_loaded,
     )
+
+
+@app.get("/live")
+async def live():
+    return {
+        "status": "live",
+        "service": settings.service_name,
+        "version": settings.service_version,
+        "uptime_seconds": round(time.time() - _start_time, 1),
+    }
+
+
+@app.get("/ready", response_model=HealthResponse)
+async def ready(request: Request):
+    statuses, models_loaded = await _rag_dependency_statuses(request)
+    return _health_response(statuses, models_loaded)
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health(request: Request):
+    return await ready(request)

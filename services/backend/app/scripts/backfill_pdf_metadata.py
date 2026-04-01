@@ -90,7 +90,7 @@ async def _run(args: argparse.Namespace) -> int:
     if not args.all_ready:
         raise SystemExit("Pass --all-ready to confirm reprocessing all ready PDF documents.")
 
-    pool = await asyncpg.create_pool(dsn=settings.postgres_dsn, min_size=1, max_size=4)
+    pool = await db.create_db_pool()
     try:
         documents = await _fetch_ready_pdfs(pool, args.limit)
         if not documents:

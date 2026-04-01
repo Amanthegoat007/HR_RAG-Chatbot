@@ -18,7 +18,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _normalize_json_object(value: Any) -> dict[str, Any]:
+def normalize_json_object(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
     if isinstance(value, str):
@@ -30,12 +30,42 @@ def _normalize_json_object(value: Any) -> dict[str, Any]:
     return {}
 
 
+def normalize_json_array(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        return parsed if isinstance(parsed, list) else []
+    return []
+
+
+async def _init_connection(conn: asyncpg.Connection) -> None:
+    await conn.set_type_codec(
+        "json",
+        schema="pg_catalog",
+        encoder=json.dumps,
+        decoder=json.loads,
+        format="text",
+    )
+    await conn.set_type_codec(
+        "jsonb",
+        schema="pg_catalog",
+        encoder=json.dumps,
+        decoder=json.loads,
+        format="text",
+    )
+
+
 async def create_db_pool() -> asyncpg.Pool:
     return await asyncpg.create_pool(
         dsn=settings.postgres_dsn,
         min_size=2,
         max_size=10,
         command_timeout=30,
+        init=_init_connection,
     )
 
 
@@ -106,7 +136,7 @@ async def fetch_messages(pool: asyncpg.Pool, conv_id: str) -> List[Dict[str, Any
     normalized_rows: list[dict[str, Any]] = []
     for row in rows:
         payload = dict(row)
-        payload["metadata"] = _normalize_json_object(payload.get("metadata"))
+        payload["metadata"] = normalize_json_object(payload.get("metadata"))
         normalized_rows.append(payload)
     return normalized_rows
 
@@ -126,11 +156,30 @@ async def create_message(
             VALUES ($1::uuid, $2, $3, $4::jsonb)
             RETURNING id::text
             """,
-            conv_id, role, content, json.dumps(payload)
+            conv_id, role, content, payload
         )
         # Touch conversation explicitly if trigger isn't doing it on message insert
         await conn.execute("UPDATE conversations SET updated_at = NOW() WHERE id = $1::uuid", conv_id)
     return msg_id
+
+
+async def conversation_has_session_documents(pool: asyncpg.Pool, conv_id: str) -> bool:
+    async with pool.acquire() as conn:
+        return bool(
+            await conn.fetchval(
+                """
+                SELECT 1
+                FROM documents
+                WHERE metadata->>'scope' = 'session'
+                  AND (
+                    metadata->>'conversation_id' = $1
+                    OR metadata->>'session_id' = $1
+                  )
+                LIMIT 1
+                """,
+                conv_id,
+            )
+        )
 
 async def fetch_popular_questions(pool: asyncpg.Pool, limit: int = 5) -> List[str]:
     """Fetch the most frequently asked user questions."""
@@ -183,7 +232,7 @@ async def create_document_record(
             VALUES
                 ($1::uuid, $2, $3, $4, $5, $6, $7::jsonb)
             """,
-            document_id, filename, original_format, minio_path, file_size_bytes, uploaded_by, json.dumps(metadata),
+            document_id, filename, original_format, minio_path, file_size_bytes, uploaded_by, metadata,
         )
     return document_id
 
@@ -211,7 +260,6 @@ async def update_document_status(
             set_parts.append(f"{db_col} = ${param_idx}")
             value = kwargs[kwarg_key]
             if kwarg_key == "metadata":
-                value = json.dumps(value)
                 set_parts[-1] = f"{db_col} = ${param_idx}::jsonb"
             params.append(value)
             param_idx += 1
@@ -229,7 +277,11 @@ async def update_document_status(
 async def get_document(pool: asyncpg.Pool, document_id: str) -> Optional[dict[str, Any]]:
     async with pool.acquire() as conn:
         row = await conn.fetchrow("SELECT * FROM documents WHERE id = $1::uuid", document_id)
-    return dict(row) if row else None
+    if not row:
+        return None
+    payload = dict(row)
+    payload["metadata"] = normalize_json_object(payload.get("metadata"))
+    return payload
 
 
 async def get_documents_by_ids(
@@ -245,7 +297,12 @@ async def get_documents_by_ids(
             "SELECT * FROM documents WHERE id = ANY($1::uuid[])",
             unique_ids,
         )
-    return {str(row["id"]): dict(row) for row in rows}
+    normalized: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        payload = dict(row)
+        payload["metadata"] = normalize_json_object(payload.get("metadata"))
+        normalized[str(row["id"])] = payload
+    return normalized
 
 async def list_documents(
     pool: asyncpg.Pool,
@@ -299,7 +356,12 @@ async def list_documents(
             *params,
         )
 
-    return [dict(row) for row in rows], total
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        payload = dict(row)
+        payload["metadata"] = normalize_json_object(payload.get("metadata"))
+        normalized_rows.append(payload)
+    return normalized_rows, total
 
 async def delete_document_record(pool: asyncpg.Pool, document_id: str) -> bool:
     async with pool.acquire() as conn:
@@ -349,7 +411,22 @@ async def write_audit_log(
         async with pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO audit_log (event_type, role, username, ip_address, details) VALUES ($1, $2, $3, $4, $5::jsonb)",
-                event_type, role, username, ip_address, json.dumps(details),
+                event_type, role, username, ip_address, details,
             )
     except Exception as exc:
         logger.error("Audit log write failed", extra={"event": event_type, "error": str(exc)})
+
+
+async def list_expired_session_document_ids(pool: asyncpg.Pool, max_age_hours: int = 24) -> list[str]:
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT id::text AS id
+            FROM documents
+            WHERE metadata->>'scope' = 'session'
+              AND uploaded_at < NOW() - ($1::text || ' hours')::interval
+            ORDER BY uploaded_at ASC
+            """,
+            max_age_hours,
+        )
+    return [row["id"] for row in rows]

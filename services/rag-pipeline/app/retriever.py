@@ -45,6 +45,7 @@ QDRANT_BASE = f"{settings.qdrant_url}/collections/{settings.qdrant_collection}/p
 
 async def hybrid_search(
     qdrant_client,  # kept for interface compat but unused — we use REST directly
+    http_client: httpx.AsyncClient,
     dense_vector: list[float],
     sparse_indices: list[int],
     sparse_values: list[float],
@@ -151,17 +152,15 @@ async def hybrid_search(
             hyde_sparse_body["filter"] = search_filter
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Build coroutines inside the client context
-            coros = [
-                client.post(f"{QDRANT_BASE}/search", json=dense_body),
-                client.post(f"{QDRANT_BASE}/search", json=sparse_body),
-            ]
-            if hyde_dense_body and hyde_sparse_body:
-                coros.append(client.post(f"{QDRANT_BASE}/search", json=hyde_dense_body))
-                coros.append(client.post(f"{QDRANT_BASE}/search", json=hyde_sparse_body))
+        coros = [
+            http_client.post(f"{QDRANT_BASE}/search", json=dense_body, timeout=30.0),
+            http_client.post(f"{QDRANT_BASE}/search", json=sparse_body, timeout=30.0),
+        ]
+        if hyde_dense_body and hyde_sparse_body:
+            coros.append(http_client.post(f"{QDRANT_BASE}/search", json=hyde_dense_body, timeout=30.0))
+            coros.append(http_client.post(f"{QDRANT_BASE}/search", json=hyde_sparse_body, timeout=30.0))
 
-            responses = await asyncio.gather(*coros)
+        responses = await asyncio.gather(*coros)
 
         for resp in responses:
             resp.raise_for_status()

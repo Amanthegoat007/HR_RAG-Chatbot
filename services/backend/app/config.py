@@ -55,6 +55,7 @@ class BackendSettings(BaseSettings):
     embedding_svc_url: str = "http://rag-pipeline:8002"
     document_ingest_url: str = "http://document-ingest-api:8003"
     ingest_internal_token: str = "change-me-ingest-token"
+    llm_server_url: str = "http://llm:8080"
 
     # Document processing parameters
     max_upload_size_mb: int = 200
