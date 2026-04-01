@@ -4,6 +4,12 @@ import type {
   AssistantResponsePayload,
   MessageMetadata,
 } from "@/types/chat.types";
+import type {
+  BenchmarkBootstrapResponse,
+  BenchmarkPreset,
+  BenchmarkRunCreatedResponse,
+  BenchmarkRunStatusResponse,
+} from "@/types/benchmark.types";
 
 export const authApi = {
   login(credentials: LoginCredentials) {
@@ -54,6 +60,7 @@ export const chatApi = {
     message: string,
     language?: string,
     reasoningMode?: "fast" | "deep",
+    activeAttachmentDocumentId?: string,
     signal?: AbortSignal,
   ) {
     const res = await axiosClient.post(
@@ -63,6 +70,7 @@ export const chatApi = {
         message,
         language,
         reasoningMode,
+        activeAttachmentDocumentId,
       },
       { signal },
     );
@@ -91,6 +99,7 @@ export const chatApi = {
     conversationId: string,
     message: string,
     reasoningMode: "fast" | "deep",
+    activeAttachmentDocumentId: string | undefined,
     callbacks: {
       onToken: (token: string) => void;
       onMeta: (userMessageId: string) => void;
@@ -110,7 +119,12 @@ export const chatApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ conversationId, message, reasoningMode }),
+      body: JSON.stringify({
+        conversationId,
+        message,
+        reasoningMode,
+        activeAttachmentDocumentId,
+      }),
       signal,
     });
 
@@ -204,5 +218,27 @@ export const chatApi = {
     return axiosClient.delete(
       `/api/messages/${conversationId}/${messageId}/after`,
     );
+  },
+};
+
+export const benchmarkApi = {
+  async fetchBootstrap() {
+    const res = await axiosClient.get<BenchmarkBootstrapResponse>("/api/benchmark");
+    return res.data;
+  },
+
+  async runBenchmark(preset: BenchmarkPreset, concurrency?: number) {
+    const res = await axiosClient.post<BenchmarkRunCreatedResponse>(
+      "/api/benchmark/run",
+      { preset, concurrency },
+    );
+    return res.data;
+  },
+
+  async fetchRun(jobId: string) {
+    const res = await axiosClient.get<BenchmarkRunStatusResponse>(
+      `/api/benchmark/runs/${jobId}`,
+    );
+    return res.data;
   },
 };

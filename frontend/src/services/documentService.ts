@@ -103,11 +103,22 @@ export const documentService = {
       formData.append("conversation_id", options.conversationId);
     }
 
-    const res = await axiosClient.post("/api/documents/intake", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return res.data;
+    try {
+      const res = await axiosClient.post("/api/documents/intake", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return res.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const detail =
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          error.message;
+        throw new Error(detail || "Failed to upload document.");
+      }
+      throw error;
+    }
   },
 };

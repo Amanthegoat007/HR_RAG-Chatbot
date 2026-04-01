@@ -33,6 +33,7 @@ celery_app.conf.update(
     task_routes={
         "app.maintenance.generate_conversation_title": {"queue": "backend-maintenance"},
         "app.maintenance.cleanup_expired_session_documents": {"queue": "backend-maintenance"},
+        "app.maintenance.run_smoke_benchmark": {"queue": "backend-maintenance"},
     },
 
     # Task retry settings (individual tasks also have their own retry logic)

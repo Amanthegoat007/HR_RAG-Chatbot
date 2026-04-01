@@ -303,6 +303,7 @@ class ContextResolutionCache:
         conversation_id: str,
         query: str,
         recent_messages: list[dict[str, Any]],
+        conversation_working_set: dict[str, Any] | None = None,
     ) -> str:
         compact_history = [
             {
@@ -329,6 +330,7 @@ class ContextResolutionCache:
                     "conversation_id": conversation_id,
                     "query": " ".join((query or "").split()),
                     "history": compact_history,
+                    "working_set": conversation_working_set or {},
                 },
                 sort_keys=True,
                 ensure_ascii=False,
@@ -342,6 +344,7 @@ class ContextResolutionCache:
         conversation_id: str,
         query: str,
         recent_messages: list[dict[str, Any]],
+        conversation_working_set: dict[str, Any] | None = None,
     ) -> Optional[dict[str, Any]]:
         if self._client is None or not conversation_id:
             return None
@@ -350,6 +353,7 @@ class ContextResolutionCache:
             conversation_id=conversation_id,
             query=query,
             recent_messages=recent_messages,
+            conversation_working_set=conversation_working_set,
         )
         try:
             raw = await self._client.get(cache_key)
@@ -369,6 +373,7 @@ class ContextResolutionCache:
         conversation_id: str,
         query: str,
         recent_messages: list[dict[str, Any]],
+        conversation_working_set: dict[str, Any] | None = None,
         resolution: dict[str, Any],
     ) -> None:
         if self._client is None or not conversation_id:
@@ -378,6 +383,7 @@ class ContextResolutionCache:
             conversation_id=conversation_id,
             query=query,
             recent_messages=recent_messages,
+            conversation_working_set=conversation_working_set,
         )
         payload = {
             **resolution,

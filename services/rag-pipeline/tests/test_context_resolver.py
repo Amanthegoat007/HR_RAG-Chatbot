@@ -41,6 +41,10 @@ def test_llm_first_resolver_returns_direct_for_clear_query(monkeypatch):
                 "recent_answer_summary": None,
                 "unresolved_references": [],
                 "clarification_question": None,
+                "focus_type": "policy",
+                "focus_id": None,
+                "focus_label": "Paid Time Off policy",
+                "action": "resolve",
             }
         )
 
@@ -81,6 +85,10 @@ def test_llm_first_resolver_uses_cache_before_calling_llm(monkeypatch):
             "recent_answer_summary": "Probation lasts 6 months and can be extended once with approval.",
             "unresolved_references": ["it"],
             "clarification_question": None,
+            "focus_type": "policy",
+            "focus_id": None,
+            "focus_label": "Probation policy",
+            "action": "resolve",
         }
     )
 
@@ -130,6 +138,10 @@ def test_llm_first_resolver_retries_invalid_json_once(monkeypatch):
                 "recent_answer_summary": "I summarized annual leave only.",
                 "unresolved_references": ["that"],
                 "clarification_question": "Do you want annual leave, sick leave, or another leave policy?",
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "clarify",
             }
         )
 
@@ -195,3 +207,102 @@ def test_llm_first_resolver_falls_back_safely_on_llm_failure(monkeypatch):
     assert resolution.source == "fallback"
     assert resolution.resolution_mode == "resolved_follow_up"
     assert "probation policy" in resolution.standalone_query.lower()
+
+
+def test_document_reference_resolves_to_single_ready_session_document(monkeypatch):
+    from app import context_resolver
+
+    async def fake_generate_text(**kwargs):
+        return json.dumps(
+            {
+                "resolution_mode": "clarify",
+                "standalone_query": "",
+                "confidence": 0.2,
+                "active_subject": None,
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": ["this"],
+                "clarification_question": "Which document do you mean?",
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "clarify",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "Can you explain this uploaded document?",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-doc-1",
+            session_scope_active=True,
+            conversation_working_set={
+                "session_documents": [
+                    {
+                        "document_id": "doc-1",
+                        "display_name": "Jane_Doe_Jan_Bill_Annotated.png",
+                        "status": "ready",
+                    }
+                ],
+                "latest_ready_document_id": "doc-1",
+            },
+        )
+    )
+
+    assert resolution.action == "resolve"
+    assert resolution.focus_type == "document"
+    assert resolution.focus_id == "doc-1"
+    assert "uploaded document" in resolution.standalone_query.lower()
+
+
+def test_document_reference_returns_status_only_for_processing_upload(monkeypatch):
+    from app import context_resolver
+
+    async def fake_generate_text(**kwargs):
+        return json.dumps(
+            {
+                "resolution_mode": "clarify",
+                "standalone_query": "",
+                "confidence": 0.15,
+                "active_subject": None,
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": ["document"],
+                "clarification_question": "Which file should I use?",
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "clarify",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "Explain the uploaded document in this conversation.",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-doc-2",
+            session_scope_active=True,
+            conversation_working_set={
+                "session_documents": [
+                    {
+                        "document_id": "doc-2",
+                        "display_name": "Offer_Letter.pdf",
+                        "status": "processing",
+                    }
+                ],
+                "active_attachment_document_id": "doc-2",
+            },
+        )
+    )
+
+    assert resolution.action == "status_only"
+    assert resolution.focus_type == "document"
+    assert resolution.focus_id == "doc-2"

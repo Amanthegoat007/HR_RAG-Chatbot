@@ -17,6 +17,7 @@ import {
   TbEdit,
   TbChevronDown,
   TbFiles,
+  TbActivityHeartbeat,
 } from "react-icons/tb";
 import { useState, useMemo } from "react";
 
@@ -46,6 +47,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { roles } = useAppSelector((s) => s.auth);
   const isAdmin =
     roles.includes("ROLE_ADMIN") || roles.includes("ROLE_ADMINISTRATOR");
+  const isBenchmark = roles.includes("ROLE_BENCHMARK");
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { toggleMobile } = useLayout();
@@ -179,6 +181,26 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className={classes.navButton}
               >
                 Documents
+              </Button>
+            )}
+
+            {isBenchmark && (
+              <Button
+                type="button"
+                leftSection={
+                  <TbActivityHeartbeat size={20} style={{ opacity: 0.8 }} />
+                }
+                variant="subtle"
+                color="gray"
+                fullWidth
+                justify="flex-start"
+                onClick={() => {
+                  navigate("/benchmark");
+                  if (isMobile) toggleMobile();
+                }}
+                className={classes.navButton}
+              >
+                Monitoring / Benchmark
               </Button>
             )}
 

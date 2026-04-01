@@ -6,6 +6,8 @@ DEPENDENCIES: pydantic-settings
 ============================================================================
 """
 
+from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +33,11 @@ class BackendSettings(BaseSettings):
     admin_password_hash: str
     user_username: str = "hr_user"
     user_password_hash: str
+    benchmark_username: Optional[str] = None
+    benchmark_password_hash: Optional[str] = None
+    frontend_internal_url: str = "http://frontend"
+    grafana_public_url: Optional[str] = None
+    prometheus_public_url: Optional[str] = None
 
     # PostgreSQL (Audit, Auth, BFF, Ingest)
     postgres_dsn: str

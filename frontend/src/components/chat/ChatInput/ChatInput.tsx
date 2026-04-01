@@ -357,6 +357,7 @@ export default function ChatInput({ isHeroMode = false }: ChatInputProps) {
     const finalMessage =
       messageContent || `Analyze the uploaded file: ${selectedFile?.name}`;
     const selectedReasoningMode = reasoningMode;
+    const activeAttachmentDocumentId = attachmentReady ? attachedDocumentId || undefined : undefined;
 
     setValue("");
     setSuggestionsDismissed(true);
@@ -396,6 +397,7 @@ export default function ChatInput({ isHeroMode = false }: ChatInputProps) {
             optimisticId,
             language: primaryLanguage,
             reasoningMode: selectedReasoningMode,
+            activeAttachmentDocumentId,
           }),
         );
 

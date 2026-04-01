@@ -55,3 +55,13 @@ async def require_admin(payload: dict = Depends(require_auth)) -> dict:
             detail="Admin privileges required",
         )
     return payload
+
+
+async def require_benchmark(payload: dict = Depends(require_auth)) -> dict:
+    roles = payload.get("roles", [])
+    if "ROLE_BENCHMARK" not in roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Benchmark privileges required",
+        )
+    return payload

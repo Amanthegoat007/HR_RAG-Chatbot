@@ -84,6 +84,25 @@ def build_assistant_message_metadata(
             "unresolvedReferences": context_resolution.get("unresolved_references", []),
             "clarificationQuestion": context_resolution.get("clarification_question"),
             "source": context_resolution.get("source"),
+            "focusType": context_resolution.get("focus_type"),
+            "focusId": context_resolution.get("focus_id"),
+            "focusLabel": context_resolution.get("focus_label"),
+            "action": context_resolution.get("action"),
+            "focusSource": context_resolution.get("focus_source"),
+        }
+    if meta.get("focus"):
+        metadata["focus"] = {
+            "type": meta["focus"].get("type"),
+            "id": meta["focus"].get("id"),
+            "label": meta["focus"].get("label"),
+        }
+    if meta.get("document_focus"):
+        document_focus = meta["document_focus"]
+        metadata["documentFocus"] = {
+            "documentId": document_focus.get("document_id"),
+            "displayName": document_focus.get("display_name"),
+            "resolutionSource": document_focus.get("resolution_source"),
+            "queryMode": document_focus.get("query_mode"),
         }
     for upstream_key, metadata_key in (
         ("visible_token_count", "visibleTokenCount"),

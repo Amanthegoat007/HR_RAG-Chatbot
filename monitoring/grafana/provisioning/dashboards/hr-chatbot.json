@@ -62,17 +62,17 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{service=\"query-svc\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{service=\"rag-pipeline\",handler=\"/query\"}[5m])) by (le))",
           "legendFormat": "P50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"query-svc\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"rag-pipeline\",handler=\"/query\"}[5m])) by (le))",
           "legendFormat": "P95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=\"query-svc\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=\"rag-pipeline\",handler=\"/query\"}[5m])) by (le))",
           "legendFormat": "P99",
           "refId": "C"
         }
@@ -107,7 +107,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"query-svc\",status=~\"2..\"}[5m])) / sum(rate(http_requests_total{service=\"query-svc\"}[5m]))",
+          "expr": "sum(rate(http_requests_total{service=\"rag-pipeline\",handler=\"/query\",status=~\"2..\"}[5m])) / clamp_min(sum(rate(http_requests_total{service=\"rag-pipeline\",handler=\"/query\"}[5m])), 0.000001)",
           "legendFormat": "Success Rate",
           "refId": "A"
         }
@@ -139,12 +139,12 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(semantic_cache_hits_total[5m])) / (sum(rate(semantic_cache_hits_total[5m])) + sum(rate(semantic_cache_misses_total[5m])))",
-          "legendFormat": "Cache Hit Rate",
+          "expr": "sum(rate(vllm:external_prefix_cache_hits_total{service=\"llm\"}[5m])) / clamp_min(sum(rate(vllm:external_prefix_cache_queries_total{service=\"llm\"}[5m])), 0.000001)",
+          "legendFormat": "Prefix Cache Hit Rate",
           "refId": "A"
         }
       ],
-      "title": "Semantic Cache Hit Rate",
+      "title": "LLM Prefix Cache Hit Rate",
       "type": "gauge"
     },
     {
@@ -166,7 +166,7 @@
       "id": 4,
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{service=\"query-svc\"}[1m]))",
+          "expr": "sum(rate(http_requests_total{service=\"rag-pipeline\",handler=\"/query\"}[1m]))",
           "legendFormat": "Requests/sec",
           "refId": "A"
         }
@@ -200,17 +200,17 @@
       "id": 5,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"embedding-svc\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"rag-pipeline\",handler=\"/embed\"}[5m])) by (le))",
           "legendFormat": "Embed P95",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"reranker-svc\"}[5m])) by (le))",
-          "legendFormat": "Rerank P95",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"rag-pipeline\",handler=\"/query\"}[5m])) by (le))",
+          "legendFormat": "Query P95",
           "refId": "B"
         }
       ],
-      "title": "Embedding & Reranker Latency (P95)",
+      "title": "RAG Pipeline Latency (P95)",
       "type": "timeseries"
     },
     {
@@ -232,17 +232,17 @@
       "id": 6,
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{service=\"llm-server\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(vllm:e2e_request_latency_seconds_bucket{service=\"llm\"}[5m])) by (le))",
           "legendFormat": "LLM P50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=\"llm-server\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(vllm:e2e_request_latency_seconds_bucket{service=\"llm\"}[5m])) by (le))",
           "legendFormat": "LLM P95",
           "refId": "B"
         }
       ],
-      "title": "LLM (llama.cpp) Latency",
+      "title": "LLM (vLLM) Latency",
       "type": "timeseries"
     },
     {
@@ -270,17 +270,17 @@
       "id": 7,
       "targets": [
         {
-          "expr": "celery_tasks_total{state=\"SUCCESS\"}",
-          "legendFormat": "Succeeded",
+          "expr": "sum(rate(http_requests_total{service=\"document-ingest-api\",handler=\"/ingest/internal/enqueue/{document_id}\",status=\"2xx\"}[5m]))",
+          "legendFormat": "Enqueued/sec",
           "refId": "A"
         },
         {
-          "expr": "celery_tasks_total{state=\"FAILURE\"}",
-          "legendFormat": "Failed",
+          "expr": "sum(rate(http_requests_total{service=\"document-ingest-api\",handler=\"/ingest/internal/delete/{document_id}\",status=\"2xx\"}[5m]))",
+          "legendFormat": "Deletes/sec",
           "refId": "B"
         }
       ],
-      "title": "Ingest Tasks (Success vs Failure)",
+      "title": "Ingest API Activity",
       "type": "timeseries"
     },
     {
@@ -310,12 +310,12 @@
       },
       "targets": [
         {
-          "expr": "celery_queue_length{queue=\"ingest\"}",
-          "legendFormat": "Queue Depth",
+          "expr": "sum(increase(http_requests_total{service=\"document-ingest-api\",handler=\"/ingest/internal/enqueue/{document_id}\",status=\"2xx\"}[5m]))",
+          "legendFormat": "Enqueued",
           "refId": "A"
         }
       ],
-      "title": "Ingest Queue Depth",
+      "title": "Documents Enqueued (5m)",
       "type": "stat"
     },
     {
@@ -347,34 +347,24 @@
       },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{service=\"llm-server\"}",
-          "legendFormat": "llm-server",
+          "expr": "process_resident_memory_bytes{service=\"llm\"}",
+          "legendFormat": "llm",
           "refId": "A"
         },
         {
-          "expr": "process_resident_memory_bytes{service=\"embedding-svc\"}",
-          "legendFormat": "embedding-svc",
+          "expr": "process_resident_memory_bytes{service=\"rag-pipeline\"}",
+          "legendFormat": "rag-pipeline",
           "refId": "B"
         },
         {
-          "expr": "process_resident_memory_bytes{service=\"reranker-svc\"}",
-          "legendFormat": "reranker-svc",
+          "expr": "process_resident_memory_bytes{service=\"document-ingest-api\"}",
+          "legendFormat": "document-ingest-api",
           "refId": "C"
         },
         {
-          "expr": "process_resident_memory_bytes{service=\"query-svc\"}",
-          "legendFormat": "query-svc",
+          "expr": "process_resident_memory_bytes{service=\"backend\"}",
+          "legendFormat": "backend",
           "refId": "D"
-        },
-        {
-          "expr": "process_resident_memory_bytes{service=\"ingest-svc\"}",
-          "legendFormat": "ingest-svc",
-          "refId": "E"
-        },
-        {
-          "expr": "process_resident_memory_bytes{service=\"auth-svc\"}",
-          "legendFormat": "auth-svc",
-          "refId": "F"
         }
       ],
       "title": "Resident Memory Usage per Service",

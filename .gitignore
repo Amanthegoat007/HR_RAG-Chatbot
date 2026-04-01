@@ -74,3 +74,6 @@ nginx/ssl/*.crt
 
 # Local tooling state
 .codex
+
+# Benchmark artifacts
+benchmark-results/

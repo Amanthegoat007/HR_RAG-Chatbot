@@ -47,6 +47,7 @@ async def stream_rag_pipeline(
     user_role: str = "employee",
     reasoning_mode: str | None = None,
     session_scope_active: bool = False,
+    conversation_working_set: dict[str, Any] | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Proxy SSE events from the rag-pipeline to the client.
@@ -63,6 +64,7 @@ async def stream_rag_pipeline(
         "user_role": user_role,
         "reasoning_mode": reasoning_mode,
         "session_scope_active": session_scope_active,
+        "conversation_working_set": conversation_working_set or {},
     }
 
     collected_tokens: list[str] = []
@@ -168,6 +170,7 @@ async def query_rag_pipeline(
     user_role: str = "employee",
     reasoning_mode: str | None = None,
     session_scope_active: bool = False,
+    conversation_working_set: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Proxies the user's message to the rag-pipeline and returns the full response string.
@@ -180,6 +183,7 @@ async def query_rag_pipeline(
         "user_role": user_role,
         "reasoning_mode": reasoning_mode,
         "session_scope_active": session_scope_active,
+        "conversation_working_set": conversation_working_set or {},
     }
 
     assistant_message = ""

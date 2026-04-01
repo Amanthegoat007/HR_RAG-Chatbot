@@ -9,6 +9,7 @@ from app.models import MessageItem, MessageListResponse, SendMessageRequest, Sen
 from app.config import settings
 from app.dependencies import require_auth
 from app import db
+from app.services.conversation_working_set import build_conversation_working_set
 from app.services.query_proxy import query_rag_pipeline, stream_rag_pipeline
 from app.maintenance import generate_conversation_title
 
@@ -88,6 +89,12 @@ async def send_message(req: SendMessageRequest, request: Request, payload: dict 
     # Extract role mapping (admin/user)
     user_role = "admin" if user_id == settings.admin_username else "employee"
     session_scope_active = await db.conversation_has_session_documents(pool, req.conversationId)
+    conversation_working_set = await build_conversation_working_set(
+        pool,
+        req.conversationId,
+        recent_messages=conversation_history,
+        active_attachment_document_id=req.activeAttachmentDocumentId,
+    )
 
     # 3. Call RAG pipeline with conversation history
     assistant_result = await query_rag_pipeline(
@@ -99,6 +106,7 @@ async def send_message(req: SendMessageRequest, request: Request, payload: dict 
         user_role=user_role,
         reasoning_mode=req.reasoningMode,
         session_scope_active=session_scope_active,
+        conversation_working_set=conversation_working_set,
     )
     
     # 4. Save assistant message
@@ -163,6 +171,12 @@ async def stream_message(req: SendMessageRequest, request: Request, payload: dic
         assistant_metadata: dict = {}
         user_role = "admin" if user_id == settings.admin_username else "employee"
         session_scope_active = await db.conversation_has_session_documents(pool, req.conversationId)
+        conversation_working_set = await build_conversation_working_set(
+            pool,
+            req.conversationId,
+            recent_messages=conversation_history,
+            active_attachment_document_id=req.activeAttachmentDocumentId,
+        )
         
         async for event in stream_rag_pipeline(
             req.message, 
@@ -173,6 +187,7 @@ async def stream_message(req: SendMessageRequest, request: Request, payload: dic
             user_role=user_role,
             reasoning_mode=req.reasoningMode,
             session_scope_active=session_scope_active,
+            conversation_working_set=conversation_working_set,
         ):
             # Parse the event to check for the done event containing fullText
             if event.startswith("data: "):

@@ -47,67 +47,43 @@ scrape_configs:
         labels:
           service: "prometheus"
 
-  # ── Auth Service ──────────────────────────────────────────────────────────
-  - job_name: "auth-svc"
+  # ── Backend API / BFF ─────────────────────────────────────────────────────
+  - job_name: "backend"
     static_configs:
-      - targets: ["auth-svc:8001"]
+      - targets: ["backend:8000"]
         labels:
-          service: "auth-svc"
+          service: "backend"
           tier: "application"
     metrics_path: "/metrics"
     scrape_interval: 15s
 
-  # ── Query Service ─────────────────────────────────────────────────────────
-  # This is the most important service to monitor — it handles all user queries.
-  # Key metrics: request latency, cache hit rate, error rate.
-  - job_name: "query-svc"
+  # ── RAG Pipeline ──────────────────────────────────────────────────────────
+  # This is the core query orchestration service for user-facing answers.
+  - job_name: "rag-pipeline"
     static_configs:
-      - targets: ["query-svc:8002"]
+      - targets: ["rag-pipeline:8002"]
         labels:
-          service: "query-svc"
+          service: "rag-pipeline"
           tier: "application"
     metrics_path: "/metrics"
-    scrape_interval: 10s   # Higher frequency for the primary user-facing service
+    scrape_interval: 10s
 
-  # ── Ingest Service ────────────────────────────────────────────────────────
-  - job_name: "ingest-svc"
+  # ── Document Ingest API ───────────────────────────────────────────────────
+  - job_name: "document-ingest-api"
     static_configs:
-      - targets: ["ingest-svc:8003"]
+      - targets: ["document-ingest-api:8003"]
         labels:
-          service: "ingest-svc"
+          service: "document-ingest-api"
           tier: "application"
     metrics_path: "/metrics"
     scrape_interval: 15s
 
-  # ── Embedding Service ─────────────────────────────────────────────────────
-  # Monitor batch throughput and inference latency.
-  - job_name: "embedding-svc"
+  # ── LLM Server (vLLM) ─────────────────────────────────────────────────────
+  - job_name: "llm"
     static_configs:
-      - targets: ["embedding-svc:8004"]
+      - targets: ["llm:8080"]
         labels:
-          service: "embedding-svc"
-          tier: "ai-model"
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-
-  # ── Reranker Service ──────────────────────────────────────────────────────
-  - job_name: "reranker-svc"
-    static_configs:
-      - targets: ["reranker-svc:8005"]
-        labels:
-          service: "reranker-svc"
-          tier: "ai-model"
-    metrics_path: "/metrics"
-    scrape_interval: 15s
-
-  # ── LLM Server (llama.cpp) ────────────────────────────────────────────────
-  # llama.cpp exposes a /metrics endpoint with token generation rate,
-  # prompt processing time, and active slots.
-  - job_name: "llm-server"
-    static_configs:
-      - targets: ["llm-server:8080"]
-        labels:
-          service: "llm-server"
+          service: "llm"
           tier: "ai-model"
     metrics_path: "/metrics"
     scrape_interval: 15s

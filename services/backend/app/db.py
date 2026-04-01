@@ -181,6 +181,34 @@ async def conversation_has_session_documents(pool: asyncpg.Pool, conv_id: str) -
             )
         )
 
+
+async def list_session_documents_for_conversation(
+    pool: asyncpg.Pool,
+    conv_id: str,
+) -> list[dict[str, Any]]:
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT *
+            FROM documents
+            WHERE metadata->>'scope' = 'session'
+              AND (
+                metadata->>'conversation_id' = $1
+                OR metadata->>'session_id' = $1
+              )
+            ORDER BY uploaded_at DESC
+            """,
+            conv_id,
+        )
+
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        payload = dict(row)
+        payload["metadata"] = normalize_json_object(payload.get("metadata"))
+        normalized_rows.append(payload)
+    return normalized_rows
+
+
 async def fetch_popular_questions(pool: asyncpg.Pool, limit: int = 5) -> List[str]:
     """Fetch the most frequently asked user questions."""
     async with pool.acquire() as conn:

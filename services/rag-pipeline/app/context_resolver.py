@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal
 
 import httpx
@@ -44,28 +45,65 @@ FOLLOW_UP_HINTS = (
     "can you expand",
 )
 
+DOCUMENT_REFERENCE_MARKERS = (
+    "document",
+    "file",
+    "upload",
+    "uploaded",
+    "attachment",
+    "attached",
+    "screenshot",
+    "pdf",
+    "image",
+    "bill",
+    "invoice",
+)
+
+DOCUMENT_UNDERSTANDING_MARKERS = (
+    "explain",
+    "summarize",
+    "summary",
+    "understand",
+    "analyze",
+    "analyse",
+    "what is",
+    "what does",
+    "what do",
+    "tell me about",
+)
+
+PROCESSING_STATUSES = {"pending", "normalizing", "processing", "embedding"}
+STATUS_ONLY_STATUSES = PROCESSING_STATUSES | {"needs_review", "failed"}
+
 DEFAULT_DOMAIN_EXAMPLES = """Example 1:
 Conversation:
 - User: Explain the probation policy.
 - Assistant: Probation lasts 6 months and can be extended once with approval.
 Latest query: Can it be extended?
 Output:
-{"resolution_mode":"resolved_follow_up","standalone_query":"Can the probation period be extended under the probation policy?","confidence":0.94,"active_subject":"Probation policy","latest_topic_reference":"Probation policy","recent_answer_summary":"Probation lasts 6 months and can be extended once with approval.","unresolved_references":["it"],"clarification_question":null}
+{"resolution_mode":"resolved_follow_up","standalone_query":"Can the probation period be extended under the probation policy?","confidence":0.94,"active_subject":"Probation policy","latest_topic_reference":"Probation policy","recent_answer_summary":"Probation lasts 6 months and can be extended once with approval.","unresolved_references":["it"],"clarification_question":null,"focus_type":"policy","focus_id":null,"focus_label":"Probation policy","action":"resolve"}
 
 Example 2:
+Working set:
+- Screenshot 2026-04-01.png [ready]
+Latest query: Can you explain this uploaded document?
+Output:
+{"resolution_mode":"direct","standalone_query":"Explain and summarize the uploaded document Screenshot 2026-04-01.png, including what it is and what it is used for.","confidence":0.95,"active_subject":"Screenshot 2026-04-01.png","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":["this"],"clarification_question":null,"focus_type":"document","focus_id":"Screenshot 2026-04-01.png","focus_label":"Screenshot 2026-04-01.png","action":"resolve"}
+
+Example 3:
+Working set:
+- Offer_Letter.pdf [processing]
+Latest query: Explain the uploaded file in this conversation.
+Output:
+{"resolution_mode":"direct","standalone_query":"","confidence":0.99,"active_subject":"Offer_Letter.pdf","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"document","focus_id":"Offer_Letter.pdf","focus_label":"Offer_Letter.pdf","action":"status_only"}
+
+Example 4:
 Conversation:
 - User: Tell me about leave.
 - Assistant: I summarized annual leave only.
 Latest query: What about that?
 Output:
-{"resolution_mode":"clarify","standalone_query":"","confidence":0.22,"active_subject":"Annual leave","latest_topic_reference":null,"recent_answer_summary":"I summarized annual leave only.","unresolved_references":["that"],"clarification_question":"Do you want annual leave, sick leave, or another leave policy?"}
-
-Example 3:
-Conversation:
-- User: PTO policy?
-Latest query: PTO policy?
-Output:
-{"resolution_mode":"direct","standalone_query":"Paid Time Off policy","confidence":0.97,"active_subject":"Paid Time Off policy","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null}"""
+{"resolution_mode":"clarify","standalone_query":"","confidence":0.22,"active_subject":"Annual leave","latest_topic_reference":null,"recent_answer_summary":"I summarized annual leave only.","unresolved_references":["that"],"clarification_question":"Do you want annual leave, sick leave, or another leave policy?","focus_type":"none","focus_id":null,"focus_label":null,"action":"clarify"}"""
 
 HR_ABBREVIATIONS = {
     "wfh": "Work From Home",
@@ -92,6 +130,10 @@ class _ResolutionPayload(BaseModel):
     recent_answer_summary: str | None = None
     unresolved_references: list[str] = Field(default_factory=list)
     clarification_question: str | None = None
+    focus_type: Literal["topic", "policy", "document", "none"] = "none"
+    focus_id: str | None = None
+    focus_label: str | None = None
+    action: Literal["resolve", "clarify", "status_only"] = "resolve"
 
 
 @dataclass
@@ -106,10 +148,15 @@ class ConversationContextResolution:
     clarification_question: str | None = None
     source: Literal["llm", "cache", "fallback"] = "llm"
     context_window: str = ""
+    focus_type: Literal["topic", "policy", "document", "none"] = "none"
+    focus_id: str | None = None
+    focus_label: str | None = None
+    action: Literal["resolve", "clarify", "status_only"] = "resolve"
+    focus_source: str | None = None
 
     @property
     def clarification_needed(self) -> bool:
-        return self.resolution_mode == "clarify"
+        return self.action == "clarify" or self.resolution_mode == "clarify"
 
     @property
     def clarification_message(self) -> str | None:
@@ -129,6 +176,11 @@ def serialize_context_resolution(
         "unresolved_references": resolution.unresolved_references,
         "clarification_question": resolution.clarification_question,
         "source": resolution.source,
+        "focus_type": resolution.focus_type,
+        "focus_id": resolution.focus_id,
+        "focus_label": resolution.focus_label,
+        "action": resolution.action,
+        "focus_source": resolution.focus_source,
     }
 
 
@@ -154,6 +206,79 @@ def _expand_abbreviations(query: str) -> str:
 def _collect_unresolved_references(query: str) -> list[str]:
     lowered = (query or "").lower()
     return [marker for marker in REFERENCE_MARKERS if marker in lowered]
+
+
+def _normalize_working_set(working_set: Any | None) -> dict[str, Any]:
+    if working_set is None:
+        return {}
+    if hasattr(working_set, "model_dump"):
+        payload = working_set.model_dump()
+        return payload if isinstance(payload, dict) else {}
+    if isinstance(working_set, dict):
+        return dict(working_set)
+    return {}
+
+
+def _working_set_documents(working_set: dict[str, Any] | None) -> list[dict[str, Any]]:
+    documents = (working_set or {}).get("session_documents") or []
+    return [document for document in documents if isinstance(document, dict)]
+
+
+def _document_by_id(
+    working_set: dict[str, Any] | None,
+    document_id: str | None,
+) -> dict[str, Any] | None:
+    if not document_id:
+        return None
+    for document in _working_set_documents(working_set):
+        if document.get("document_id") == document_id:
+            return document
+    return None
+
+
+def _normalize_document_name(value: str | None) -> str:
+    stem = Path(value or "").stem or (value or "")
+    stem = re.sub(r"[_-]+", " ", stem)
+    stem = re.sub(r"\s+", " ", stem).strip().lower()
+    return stem
+
+
+def _document_label(document: dict[str, Any] | None) -> str | None:
+    if not document:
+        return None
+    return _normalize_optional_text(document.get("display_name"), limit=160)
+
+
+def _ready_documents(working_set: dict[str, Any] | None) -> list[dict[str, Any]]:
+    return [
+        document
+        for document in _working_set_documents(working_set)
+        if document.get("status") == "ready"
+    ]
+
+
+def _latest_ready_document(working_set: dict[str, Any] | None) -> dict[str, Any] | None:
+    explicit_id = (working_set or {}).get("latest_ready_document_id")
+    explicit = _document_by_id(working_set, explicit_id)
+    if explicit:
+        return explicit
+    ready_documents = _ready_documents(working_set)
+    return ready_documents[0] if ready_documents else None
+
+
+def _latest_uploaded_document(working_set: dict[str, Any] | None) -> dict[str, Any] | None:
+    documents = _working_set_documents(working_set)
+    return documents[0] if documents else None
+
+
+def _query_mentions_document_reference(query: str) -> bool:
+    lowered = (query or "").lower()
+    return any(marker in lowered for marker in DOCUMENT_REFERENCE_MARKERS)
+
+
+def _query_looks_like_document_understanding(query: str) -> bool:
+    lowered = (query or "").lower()
+    return any(marker in lowered for marker in DOCUMENT_UNDERSTANDING_MARKERS)
 
 
 def _extract_title_from_payload(response_payload: dict[str, Any]) -> str | None:
@@ -190,6 +315,8 @@ def _extract_turn_snapshot(message: dict[str, Any]) -> dict[str, str | None]:
     turn_context = metadata.get("turnContext") or metadata.get("turn_context") or {}
     context_resolution = metadata.get("contextResolution") or metadata.get("context_resolution") or {}
     response_payload = metadata.get("responsePayload") or {}
+    document_focus = metadata.get("documentFocus") or {}
+    focus = metadata.get("focus") or {}
 
     title = _extract_title_from_payload(response_payload) or _extract_title(message.get("content", ""))
     summary = (
@@ -200,11 +327,24 @@ def _extract_turn_snapshot(message: dict[str, Any]) -> dict[str, str | None]:
         or _extract_summary_from_payload(response_payload)
         or _extract_summary(message.get("content", ""))
     )
+    document_label = (
+        document_focus.get("displayName")
+        or context_resolution.get("focus_label")
+        or context_resolution.get("focusLabel")
+        or focus.get("label")
+    )
+    document_id = (
+        document_focus.get("documentId")
+        or context_resolution.get("focus_id")
+        or context_resolution.get("focusId")
+        or focus.get("id")
+    )
     active_subject = (
         turn_context.get("active_subject")
         or turn_context.get("activeSubject")
         or context_resolution.get("active_subject")
         or context_resolution.get("activeSubject")
+        or document_label
         or title
     )
     topic_reference = (
@@ -226,6 +366,8 @@ def _extract_turn_snapshot(message: dict[str, Any]) -> dict[str, str | None]:
         "topic_reference": _normalize_optional_text(topic_reference),
         "summary": _normalize_optional_text(summary),
         "sources": ", ".join(source_names[:3]) if source_names else None,
+        "document_id": str(document_id) if document_id else None,
+        "document_label": _normalize_optional_text(document_label, limit=160),
     }
 
 
@@ -239,22 +381,33 @@ def _build_prompt_history(recent_messages: list[dict[str, Any]]) -> str:
         role = "User" if message.get("role") == "user" else "Assistant"
         content = _normalize_optional_text(message.get("content"), limit=320) or ""
         if role == "Assistant":
-            content = snapshot.get("summary") or snapshot.get("active_subject") or content
+            content = (
+                snapshot.get("summary")
+                or snapshot.get("document_label")
+                or snapshot.get("active_subject")
+                or content
+            )
         lines.append(f"[{index}] {role}: {content}")
         if snapshot.get("active_subject"):
             lines.append(f"    active_subject: {snapshot['active_subject']}")
         if snapshot.get("topic_reference"):
             lines.append(f"    latest_topic_reference: {snapshot['topic_reference']}")
+        if snapshot.get("document_label"):
+            lines.append(f"    document_focus: {snapshot['document_label']}")
         if snapshot.get("sources"):
             lines.append(f"    recent_sources: {snapshot['sources']}")
     return "\n".join(lines)
 
 
-def _collect_recent_documents(recent_messages: list[dict[str, Any]]) -> list[str]:
+def _collect_recent_documents(
+    recent_messages: list[dict[str, Any]],
+    working_set: dict[str, Any] | None = None,
+) -> list[str]:
     documents: list[str] = []
     for message in reversed(recent_messages):
         snapshot = _extract_turn_snapshot(message)
         for candidate in (
+            snapshot.get("document_label"),
             snapshot.get("topic_reference"),
             snapshot.get("sources"),
         ):
@@ -265,6 +418,13 @@ def _collect_recent_documents(recent_messages: list[dict[str, Any]]) -> list[str
                     documents.append(token)
                 if len(documents) >= 5:
                     return documents
+
+    for document in _working_set_documents(working_set):
+        label = _document_label(document)
+        if label and label not in documents:
+            documents.append(label)
+        if len(documents) >= 5:
+            break
     return documents
 
 
@@ -292,11 +452,57 @@ def _latest_recent_summary(recent_messages: list[dict[str, Any]]) -> str | None:
     return None
 
 
+def _latest_document_focus(
+    recent_messages: list[dict[str, Any]],
+) -> tuple[str | None, str | None]:
+    for message in reversed(recent_messages):
+        snapshot = _extract_turn_snapshot(message)
+        if snapshot.get("document_id"):
+            return snapshot.get("document_id"), snapshot.get("document_label")
+    return None, None
+
+
+def _working_set_summary(working_set: dict[str, Any] | None) -> str:
+    lines: list[str] = []
+    documents = _working_set_documents(working_set)
+    if not documents:
+        lines.append("No session documents.")
+        return "\n".join(lines)
+
+    active_attachment = _document_by_id(
+        working_set,
+        (working_set or {}).get("active_attachment_document_id"),
+    )
+    last_focused = _document_by_id(
+        working_set,
+        (working_set or {}).get("last_focused_document_id"),
+    )
+
+    for document in documents[:6]:
+        label = _document_label(document) or "Uploaded document"
+        status = document.get("status") or "unknown"
+        parts = [f"- {label} [{status}]"]
+        if document.get("source_format"):
+            parts.append(f"format={document['source_format']}")
+        if document.get("page_count") is not None:
+            parts.append(f"pages={document['page_count']}")
+        lines.append(" ".join(parts))
+    if active_attachment:
+        lines.append(f"Active attachment hint: {_document_label(active_attachment)}")
+    if last_focused:
+        lines.append(f"Last focused document: {_document_label(last_focused)}")
+    latest_ready = _latest_ready_document(working_set)
+    if latest_ready:
+        lines.append(f"Latest ready document: {_document_label(latest_ready)}")
+    return "\n".join(lines)
+
+
 def _build_context_window(
     resolution: ConversationContextResolution,
     recent_documents: list[str] | None = None,
     *,
     session_scope_active: bool = False,
+    working_set: dict[str, Any] | None = None,
 ) -> str:
     lines: list[str] = []
     if resolution.active_subject:
@@ -305,11 +511,16 @@ def _build_context_window(
         lines.append(f"LATEST POLICY/TOPIC REFERENCE: {resolution.latest_topic_reference}")
     if resolution.recent_answer_summary:
         lines.append(f"RECENT ANSWER SUMMARY: {resolution.recent_answer_summary}")
+    if resolution.focus_type != "none":
+        lines.append(
+            f"FOCUS: {resolution.focus_type} | {resolution.focus_label or resolution.focus_id or 'unspecified'}"
+        )
     if recent_documents:
         lines.append("RECENT DOCUMENTS:")
         lines.extend(f"- {document}" for document in recent_documents[:5])
     if session_scope_active:
         lines.append("SESSION-SCOPED DOCUMENTS: Active for this conversation.")
+        lines.append(_working_set_summary(working_set))
     if resolution.unresolved_references:
         lines.append("UNRESOLVED REFERENCES:")
         lines.extend(f"- {reference}" for reference in resolution.unresolved_references[:5])
@@ -323,6 +534,7 @@ def _build_resolver_messages(
     recent_messages: list[dict[str, Any]],
     recent_documents: list[str],
     session_scope_active: bool,
+    working_set: dict[str, Any] | None,
     strict_retry: bool = False,
 ) -> list[dict[str, str]]:
     examples = settings.context_resolution_domain_examples or DEFAULT_DOMAIN_EXAMPLES
@@ -338,6 +550,10 @@ Resolve the latest user query into one of:
 - resolved_follow_up
 - clarify
 
+You must also decide:
+- focus_type: topic | policy | document | none
+- action: resolve | clarify | status_only
+
 Use this domain as the default context:
 - Name: {settings.context_resolution_domain_name}
 - Description: {settings.context_resolution_domain_description}
@@ -346,11 +562,14 @@ Rules:
 1. Output one JSON object only.
 2. Do not answer the user's question.
 3. Use "direct" when the query already stands alone.
-4. Use "resolved_follow_up" only when prior turns clearly identify the subject.
-5. Use "clarify" when ambiguity remains or the subject cannot be bound safely.
-6. Never invent policy names, document titles, or facts not supported by the conversation.
-7. Make standalone_query concise, retrieval-ready, and self-contained.
-8. Confidence must be between 0 and 1.
+4. Use "resolved_follow_up" when prior turns or the working set clearly identify the subject.
+5. Use "clarify" only when ambiguity remains unsafe after considering the working set.
+6. When the user refers to an uploaded document and there is one clear session-document candidate, resolve it instead of asking a generic clarification.
+7. When multiple session documents exist and the user makes a generic uploaded-document reference, prefer the latest ready document unless the query clearly points to another file.
+8. Use "status_only" when the relevant uploaded document exists but is still processing, needs review, or failed parsing.
+9. Never invent policy names, document titles, or facts not supported by the conversation or working set.
+10. Make standalone_query concise, retrieval-ready, and self-contained.
+11. Confidence must be between 0 and 1.
 
 Required JSON shape:
 {{
@@ -361,7 +580,11 @@ Required JSON shape:
   "latest_topic_reference": "string | null",
   "recent_answer_summary": "string | null",
   "unresolved_references": ["string"],
-  "clarification_question": "string | null"
+  "clarification_question": "string | null",
+  "focus_type": "topic | policy | document | none",
+  "focus_id": "string | null",
+  "focus_label": "string | null",
+  "action": "resolve | clarify | status_only"
 }}
 
 Examples:
@@ -381,6 +604,9 @@ Recent conversation:
 
 Recent documents:
 {recent_documents_text}
+
+Conversation working set:
+{_working_set_summary(working_set)}
 
 Return the JSON object now."""
     return [
@@ -412,6 +638,18 @@ def _extract_json_object(raw_text: str) -> str | None:
     return None
 
 
+def _default_focus_type(
+    active_subject: str | None,
+    latest_topic_reference: str | None,
+) -> Literal["topic", "policy", "document", "none"]:
+    reference = f"{active_subject or ''} {latest_topic_reference or ''}".lower()
+    if "policy" in reference:
+        return "policy"
+    if active_subject or latest_topic_reference:
+        return "topic"
+    return "none"
+
+
 def _coerce_resolution_payload(
     payload: _ResolutionPayload,
     *,
@@ -431,14 +669,24 @@ def _coerce_resolution_payload(
     standalone_query = _normalize_query(payload.standalone_query or expanded_query)
     resolution_mode = payload.resolution_mode
     confidence = max(0.0, min(1.0, float(payload.confidence)))
+    action = payload.action
+    focus_type = payload.focus_type
+    focus_id = _normalize_optional_text(payload.focus_id, limit=160)
+    focus_label = _normalize_optional_text(payload.focus_label, limit=160)
 
-    if resolution_mode == "clarify":
+    if focus_type == "none":
+        focus_type = _default_focus_type(active_subject, latest_topic_reference)
+    if action == "clarify" or resolution_mode == "clarify":
+        resolution_mode = "clarify"
+        action = "clarify"
         standalone_query = ""
         if not clarification_question:
             clarification_question = (
                 "I can help with that, but I need a little more context. "
                 "Please mention the policy, benefit, document, or topic you want me to continue with."
             )
+    elif action == "status_only":
+        standalone_query = ""
     elif not standalone_query:
         resolution_mode = "direct"
         standalone_query = expanded_query
@@ -447,15 +695,17 @@ def _coerce_resolution_payload(
         resolution_mode == "resolved_follow_up"
         and confidence < settings.context_resolution_confidence_threshold
         and (unresolved_references or not active_subject)
+        and focus_type != "document"
     ):
         resolution_mode = "clarify"
+        action = "clarify"
         standalone_query = ""
         clarification_question = (
             clarification_question
             or "I can help with that, but I need a little more context. Which policy, benefit, document, or topic should I continue with?"
         )
 
-    resolution = ConversationContextResolution(
+    return ConversationContextResolution(
         resolution_mode=resolution_mode,
         standalone_query=standalone_query,
         confidence=confidence,
@@ -465,8 +715,11 @@ def _coerce_resolution_payload(
         unresolved_references=unresolved_references,
         clarification_question=clarification_question,
         source=source,
+        focus_type=focus_type,
+        focus_id=focus_id,
+        focus_label=focus_label,
+        action=action,
     )
-    return resolution
 
 
 def _parse_resolution_response(
@@ -507,13 +760,171 @@ def _build_fallback_standalone_query(query: str, active_subject: str | None) -> 
     return _normalize_query(f"{active_subject}: {normalized_query}")
 
 
+def _match_document_by_query(
+    query: str,
+    documents: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    lowered = (query or "").lower()
+    best_document = None
+    best_length = 0
+    for document in documents:
+        label = _document_label(document)
+        normalized_label = _normalize_document_name(label)
+        if not normalized_label:
+            continue
+        candidates = {normalized_label}
+        raw_label = (label or "").lower()
+        if raw_label:
+            candidates.add(raw_label)
+        for candidate in candidates:
+            if candidate and candidate in lowered and len(candidate) > best_length:
+                best_document = document
+                best_length = len(candidate)
+    return best_document
+
+
+def _build_document_standalone_query(query: str, label: str | None) -> str:
+    normalized_query = _normalize_query(query)
+    document_label = label or "the uploaded document"
+    if not normalized_query:
+        return f"Explain and summarize the uploaded document {document_label}."
+
+    lowered = normalized_query.lower()
+    if _query_mentions_document_reference(normalized_query):
+        if _query_looks_like_document_understanding(normalized_query):
+            return _normalize_query(
+                f"Explain and summarize the uploaded document {document_label}, including what it is and what it is used for."
+            )
+        return _normalize_query(f"For the uploaded document {document_label}: {normalized_query}")
+
+    return _normalize_query(f"For the uploaded document {document_label}: {normalized_query}")
+
+
+def _document_resolution(
+    query: str,
+    recent_messages: list[dict[str, Any]],
+    working_set: dict[str, Any] | None,
+) -> ConversationContextResolution | None:
+    normalized_query = _normalize_query(query)
+    unresolved_references = _collect_unresolved_references(normalized_query)
+    documents = _working_set_documents(working_set)
+    explicit_match = _match_document_by_query(normalized_query, documents)
+    document_reference_requested = explicit_match is not None or _query_mentions_document_reference(normalized_query)
+    context_dependent = _looks_context_dependent(normalized_query, unresolved_references)
+
+    last_focused_document = _document_by_id(
+        working_set,
+        (working_set or {}).get("last_focused_document_id"),
+    )
+    active_attachment_document = _document_by_id(
+        working_set,
+        (working_set or {}).get("active_attachment_document_id"),
+    )
+
+    should_consider_document = document_reference_requested or (
+        bool(last_focused_document)
+        and context_dependent
+        and _query_looks_like_document_understanding(normalized_query)
+    )
+    if not should_consider_document:
+        return None
+
+    selected = None
+    resolution_source = "conversation_memory"
+    if explicit_match:
+        selected = explicit_match
+        resolution_source = "explicit_match"
+    elif active_attachment_document and (
+        document_reference_requested or _query_looks_like_document_understanding(normalized_query)
+    ):
+        selected = active_attachment_document
+        resolution_source = "composer"
+    elif last_focused_document and context_dependent:
+        selected = last_focused_document
+        resolution_source = "conversation_memory"
+    else:
+        latest_ready_document = _latest_ready_document(working_set)
+        if latest_ready_document:
+            selected = latest_ready_document
+            resolution_source = "latest_upload"
+        else:
+            selected = _latest_uploaded_document(working_set)
+            resolution_source = "latest_upload"
+
+    label = _document_label(selected) if selected else "uploaded document"
+    document_id = selected.get("document_id") if selected else None
+    status = selected.get("status") if selected else None
+    action: Literal["resolve", "clarify", "status_only"] = (
+        "resolve" if status == "ready" else "status_only"
+    )
+
+    return ConversationContextResolution(
+        resolution_mode="resolved_follow_up" if context_dependent else "direct",
+        standalone_query=_build_document_standalone_query(normalized_query, label) if action == "resolve" else "",
+        confidence=0.99 if action == "status_only" else 0.92,
+        active_subject=label,
+        latest_topic_reference=None,
+        recent_answer_summary=_latest_recent_summary(recent_messages),
+        unresolved_references=unresolved_references,
+        clarification_question=None,
+        source="fallback",
+        focus_type="document",
+        focus_id=document_id or label,
+        focus_label=label,
+        action=action,
+        focus_source=resolution_source,
+    )
+
+
+def _finalize_resolution(
+    resolution: ConversationContextResolution,
+    *,
+    query: str,
+    recent_messages: list[dict[str, Any]],
+    working_set: dict[str, Any] | None,
+) -> ConversationContextResolution:
+    document_resolution = _document_resolution(query, recent_messages, working_set)
+    if document_resolution:
+        return document_resolution
+
+    if resolution.focus_type == "none":
+        resolution.focus_type = _default_focus_type(
+            resolution.active_subject,
+            resolution.latest_topic_reference,
+        )
+        if resolution.focus_type in {"topic", "policy"}:
+            resolution.focus_label = resolution.active_subject or resolution.latest_topic_reference
+
+    if resolution.action == "clarify":
+        resolution.resolution_mode = "clarify"
+        resolution.standalone_query = ""
+
+    return resolution
+
+
 def _fallback_resolution(
     query: str,
     recent_messages: list[dict[str, Any]],
     *,
     session_scope_active: bool = False,
+    working_set: dict[str, Any] | None = None,
 ) -> ConversationContextResolution:
     expanded_query = _expand_abbreviations(query)
+
+    document_resolution = _document_resolution(
+        expanded_query,
+        recent_messages,
+        working_set,
+    )
+    if document_resolution:
+        document_resolution.context_window = _build_context_window(
+            document_resolution,
+            _collect_recent_documents(recent_messages, working_set),
+            session_scope_active=session_scope_active,
+            working_set=working_set,
+        )
+        return document_resolution
+
     unresolved_references = _collect_unresolved_references(expanded_query)
     active_subject = _latest_active_subject(recent_messages)
     latest_topic_reference = _latest_topic_reference(recent_messages)
@@ -534,11 +945,14 @@ def _fallback_resolution(
                 "Please mention the policy, benefit, document, or topic you want me to continue with."
             ),
             source="fallback",
+            focus_type="none",
+            action="clarify",
         )
     else:
         resolution_mode: Literal["direct", "resolved_follow_up", "clarify"] = (
             "resolved_follow_up" if _looks_context_dependent(expanded_query, unresolved_references) else "direct"
         )
+        focus_type = _default_focus_type(active_subject, latest_topic_reference)
         resolution = ConversationContextResolution(
             resolution_mode=resolution_mode,
             standalone_query=_build_fallback_standalone_query(expanded_query, active_subject),
@@ -549,12 +963,16 @@ def _fallback_resolution(
             unresolved_references=unresolved_references,
             clarification_question=None,
             source="fallback",
+            focus_type=focus_type,
+            focus_label=active_subject or latest_topic_reference,
+            action="resolve",
         )
 
     resolution.context_window = _build_context_window(
         resolution,
-        _collect_recent_documents(recent_messages),
+        _collect_recent_documents(recent_messages, working_set),
         session_scope_active=session_scope_active,
+        working_set=working_set,
     )
     return resolution
 
@@ -567,17 +985,20 @@ async def resolve_conversation_context(
     cache: Any | None = None,
     conversation_id: str | None = None,
     session_scope_active: bool = False,
+    conversation_working_set: Any | None = None,
 ) -> ConversationContextResolution:
     normalized_query = _normalize_query(query)
     expanded_query = _expand_abbreviations(normalized_query)
     recent_messages = conversation_history[-(settings.context_resolution_history_turns * 2) :]
-    recent_documents = _collect_recent_documents(recent_messages)
+    working_set = _normalize_working_set(conversation_working_set)
+    recent_documents = _collect_recent_documents(recent_messages, working_set)
 
     if cache and conversation_id:
         cached_entry = await cache.get(
             conversation_id=conversation_id,
             query=expanded_query,
             recent_messages=recent_messages,
+            conversation_working_set=working_set,
         )
         if cached_entry:
             cached_resolution = _parse_resolution_response(
@@ -587,10 +1008,17 @@ async def resolve_conversation_context(
                 source="cache",
             )
             if cached_resolution:
+                cached_resolution = _finalize_resolution(
+                    cached_resolution,
+                    query=expanded_query,
+                    recent_messages=recent_messages,
+                    working_set=working_set,
+                )
                 cached_resolution.context_window = _build_context_window(
                     cached_resolution,
                     recent_documents,
                     session_scope_active=session_scope_active,
+                    working_set=working_set,
                 )
                 return cached_resolution
 
@@ -600,6 +1028,7 @@ async def resolve_conversation_context(
         recent_messages=recent_messages,
         recent_documents=recent_documents,
         session_scope_active=session_scope_active,
+        working_set=working_set,
     )
 
     raw_response = ""
@@ -626,6 +1055,7 @@ async def resolve_conversation_context(
                 recent_messages=recent_messages,
                 recent_documents=recent_documents,
                 session_scope_active=session_scope_active,
+                working_set=working_set,
                 strict_retry=True,
             )
             raw_response = await generate_text(
@@ -649,6 +1079,7 @@ async def resolve_conversation_context(
             expanded_query,
             recent_messages,
             session_scope_active=session_scope_active,
+            working_set=working_set,
         )
         logger.warning(
             "Using fallback conversation context resolution",
@@ -656,10 +1087,17 @@ async def resolve_conversation_context(
         )
         return fallback
 
+    parsed_resolution = _finalize_resolution(
+        parsed_resolution,
+        query=expanded_query,
+        recent_messages=recent_messages,
+        working_set=working_set,
+    )
     parsed_resolution.context_window = _build_context_window(
         parsed_resolution,
         recent_documents,
         session_scope_active=session_scope_active,
+        working_set=working_set,
     )
 
     if cache and conversation_id:
@@ -667,6 +1105,7 @@ async def resolve_conversation_context(
             conversation_id=conversation_id,
             query=expanded_query,
             recent_messages=recent_messages,
+            conversation_working_set=working_set,
             resolution=serialize_context_resolution(parsed_resolution),
         )
 
@@ -683,7 +1122,12 @@ def build_turn_context(
 ) -> dict[str, Any]:
     title = _extract_title(answer_text)
     summary = _extract_summary(answer_text)
-    active_subject = title or (context_resolution.active_subject if context_resolution else None) or _derive_subject_from_text(question)
+    active_subject = (
+        title
+        or (context_resolution.focus_label if context_resolution and context_resolution.focus_type == "document" else None)
+        or (context_resolution.active_subject if context_resolution else None)
+        or _derive_subject_from_text(question)
+    )
     topic_reference = (
         context_resolution.latest_topic_reference
         if context_resolution and context_resolution.latest_topic_reference
@@ -695,6 +1139,9 @@ def build_turn_context(
         "recent_summary": summary,
         "question_type": question_type,
         "unresolved_references": context_resolution.unresolved_references if context_resolution else [],
+        "focus_type": context_resolution.focus_type if context_resolution else "none",
+        "focus_id": context_resolution.focus_id if context_resolution else None,
+        "focus_label": context_resolution.focus_label if context_resolution else None,
     }
 
 

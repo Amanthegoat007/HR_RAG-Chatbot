@@ -101,8 +101,8 @@ ssl: ## Generate self-signed SSL certificate for development
 test: ## Run all unit tests (requires Python + pytest installed)
 	python -m pytest services/ -v --tb=short
 
-test-load: ## Run load test (30 concurrent users): requires BASE_URL env var
-	python utils/load_test.py --base-url $(or $(BASE_URL), https://localhost) --users 30
+test-load: ## Run end-to-end chat benchmark (5/10/20/30 users); requires TEST_PASSWORD
+	python utils/load_test.py --base-url $(or $(BASE_URL), http://localhost) $(if $(TEST_USERNAME),--username $(TEST_USERNAME),) $(if $(TEST_PASSWORD),--password $(TEST_PASSWORD),) $(if $(OUTPUT_DIR),--output-dir $(OUTPUT_DIR),)
 
 ## ─── CLEANUP ─────────────────────────────────────────────────────────────────
 

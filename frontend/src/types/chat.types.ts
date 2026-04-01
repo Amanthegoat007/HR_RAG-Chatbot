@@ -95,6 +95,22 @@ export interface MessageMetadata {
     unresolvedReferences?: string[];
     clarificationQuestion?: string;
     source?: "llm" | "cache" | "fallback";
+    focusType?: "topic" | "policy" | "document" | "none";
+    focusId?: string;
+    focusLabel?: string;
+    action?: "resolve" | "clarify" | "status_only";
+    focusSource?: string;
+  };
+  focus?: {
+    type?: "topic" | "policy" | "document" | "none";
+    id?: string;
+    label?: string;
+  };
+  documentFocus?: {
+    documentId?: string;
+    displayName?: string;
+    resolutionSource?: "llm" | "cache" | "fallback" | "composer" | "explicit_match" | "conversation_memory" | "latest_upload";
+    queryMode?: "normal" | "document_scoped" | "status_only";
   };
   trustSummary?: {
     policyTitle?: string;

@@ -119,6 +119,7 @@ export const sendMessage = createAsyncThunk<
     optimisticId: string;
     language?: string;
     reasoningMode?: "fast" | "deep";
+    activeAttachmentDocumentId?: string;
   },
   { state: RootState }
 >(
@@ -134,6 +135,7 @@ export const sendMessage = createAsyncThunk<
         payload.message,
         payload.language,
         payload.reasoningMode,
+        payload.activeAttachmentDocumentId,
         signal,
       );
 
@@ -184,6 +186,7 @@ export const streamMessage =
     optimisticId: string;
     language?: string;
     reasoningMode: "fast" | "deep";
+    activeAttachmentDocumentId?: string;
   }) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
     if (!getState().auth.isAuthenticated) return;
@@ -206,6 +209,7 @@ export const streamMessage =
         payload.conversationId,
         payload.message,
         payload.reasoningMode,
+        payload.activeAttachmentDocumentId,
         {
           onToken: (token: string) => {
             dispatch(

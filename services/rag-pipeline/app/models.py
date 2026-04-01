@@ -1,6 +1,26 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional, Literal
 
+
+class SessionDocumentDescriptor(BaseModel):
+    document_id: str
+    display_name: str
+    status: str
+    source_format: Optional[str] = None
+    page_count: Optional[int] = None
+    chunk_count: Optional[int] = None
+    uploaded_at: Optional[str] = None
+    parser_used: Optional[str] = None
+
+
+class ConversationWorkingSet(BaseModel):
+    session_documents: List[SessionDocumentDescriptor] = Field(default_factory=list)
+    latest_ready_document_id: Optional[str] = None
+    active_attachment_document_id: Optional[str] = None
+    last_focused_document_id: Optional[str] = None
+    last_focused_document_label: Optional[str] = None
+
+
 class QueryRequest(BaseModel):
     query: str = Field(..., description="The user's question or prompt")
     conversation_id: str = Field("new", description="Session ID for conversation history tracking")
@@ -11,6 +31,7 @@ class QueryRequest(BaseModel):
     user_role: str = Field("employee", description="Role of the user (e.g., admin, employee) to adjust response persona")
     reasoning_mode: Optional[Literal["fast", "deep"]] = Field(None, description="Optional reasoning mode override for the answer generation")
     session_scope_active: bool = Field(False, description="Whether the conversation currently has active session-scoped documents")
+    conversation_working_set: ConversationWorkingSet = Field(default_factory=ConversationWorkingSet)
     
 class HealthResponse(BaseModel):
     status: str

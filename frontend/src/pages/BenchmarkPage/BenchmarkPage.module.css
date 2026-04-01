@@ -1,0 +1,137 @@
+.page {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 38%),
+    var(--app-background);
+}
+
+.container {
+  padding-top: 28px;
+  padding-bottom: 32px;
+}
+
+.hero,
+.card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-md);
+}
+
+.hero {
+  padding: 24px 28px;
+}
+
+.heroBadge {
+  align-self: flex-start;
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent-border);
+  color: var(--app-accent-primary);
+}
+
+.heroTitle,
+.cardTitle {
+  color: var(--app-text-primary);
+}
+
+.heroCopy,
+.cardCopy,
+.detailLabel,
+.detailText {
+  color: var(--app-text-secondary);
+}
+
+.card {
+  padding: 22px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-accent-primary);
+  font-weight: 600;
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.customInput {
+  background: var(--app-surface-hover);
+}
+
+.linkRow {
+  display: grid;
+  gap: 12px;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metricTile {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-hover);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.metricValue {
+  color: var(--app-text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.detailStack {
+  display: grid;
+  gap: 8px;
+}
+
+.emptyState {
+  color: var(--app-text-secondary);
+  border: 1px dashed var(--app-border);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-top: 20px;
+    padding-bottom: 24px;
+  }
+
+  .hero,
+  .card {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .presetGrid,
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .customRow {
+    grid-template-columns: 1fr;
+  }
+}

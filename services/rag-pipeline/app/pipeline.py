@@ -342,6 +342,68 @@ async def _stream_generation_attempt(
             pass
 
 
+def _working_set_documents(working_set: dict[str, Any] | None) -> list[dict[str, Any]]:
+    documents = (working_set or {}).get("session_documents") or []
+    return [document for document in documents if isinstance(document, dict)]
+
+
+def _working_set_document_by_id(
+    working_set: dict[str, Any] | None,
+    document_id: str | None,
+) -> dict[str, Any] | None:
+    if not document_id:
+        return None
+    for document in _working_set_documents(working_set):
+        if document.get("document_id") == document_id:
+            return document
+    return None
+
+
+def _document_status_message(context_resolution, working_set: dict[str, Any] | None) -> str:
+    document = _working_set_document_by_id(working_set, context_resolution.focus_id)
+    label = (
+        (document or {}).get("display_name")
+        or context_resolution.focus_label
+        or "the uploaded document"
+    )
+    status = (document or {}).get("status") or "unknown"
+
+    if status in {"pending", "normalizing", "processing", "embedding"}:
+        return (
+            f"{label} is still processing for this conversation. "
+            "Please try again in a moment once indexing finishes."
+        )
+    if status == "needs_review":
+        return (
+            f"{label} needs review before I can explain it reliably. "
+            "The parser could not extract enough trustworthy text from the upload."
+        )
+    if status == "failed":
+        return (
+            f"{label} could not be processed for this conversation. "
+            "Please re-upload a clearer file and try again."
+        )
+    if not document:
+        return (
+            "I do not see a ready uploaded document in this conversation yet. "
+            "Upload a file here first, then ask me to explain it."
+        )
+    return (
+        f"I found {label}, but it is not ready to answer from yet. "
+        "Please try again in a moment."
+    )
+
+
+def _document_focus_metadata(context_resolution, *, query_mode: str) -> dict[str, Any] | None:
+    if context_resolution.focus_type != "document":
+        return None
+    return {
+        "document_id": context_resolution.focus_id,
+        "display_name": context_resolution.focus_label,
+        "resolution_source": context_resolution.focus_source or context_resolution.source,
+        "query_mode": query_mode,
+    }
+
 
 async def run_query_pipeline(
     query: str,
@@ -355,6 +417,7 @@ async def run_query_pipeline(
     user_role: str = "employee",
     session_id: Optional[str] = None,
     session_scope_active: bool = False,
+    conversation_working_set: dict[str, Any] | None = None,
     reasoning_mode: Optional[Literal["fast", "deep"]] = None,
 ) -> AsyncGenerator[Any, None]:
     """
@@ -403,10 +466,16 @@ async def run_query_pipeline(
         cache=context_resolution_cache,
         conversation_id=conversation_id,
         session_scope_active=session_scope_active,
+        conversation_working_set=conversation_working_set,
     )
     question_type = classify_question(
         context_resolution.standalone_query or normalized_query,
     )
+    focus_meta = {
+        "type": context_resolution.focus_type,
+        "id": context_resolution.focus_id,
+        "label": context_resolution.focus_label,
+    }
     if context_resolution.clarification_needed:
         clarification_meta = {
             "question_type": question_type,
@@ -416,12 +485,16 @@ async def run_query_pipeline(
             "answer_path": "clarification",
             "deep_fallback_applied": False,
             "context_resolution": serialize_context_resolution(context_resolution),
+            "focus": focus_meta,
             "turn_context": {
                 "active_subject": context_resolution.active_subject,
                 "latest_topic_reference": context_resolution.latest_topic_reference,
                 "recent_summary": context_resolution.clarification_question,
                 "question_type": question_type,
                 "unresolved_references": context_resolution.unresolved_references,
+                "focus_type": context_resolution.focus_type,
+                "focus_id": context_resolution.focus_id,
+                "focus_label": context_resolution.focus_label,
             },
         }
         yield make_stage_event("understanding", "Need clarification", "done")
@@ -430,9 +503,50 @@ async def run_query_pipeline(
         yield make_done_event(clarification_meta)
         return
 
+    if context_resolution.action == "status_only":
+        status_message = _document_status_message(
+            context_resolution,
+            conversation_working_set,
+        )
+        status_meta = {
+            "question_type": question_type,
+            "reasoning_mode": requested_reasoning_mode,
+            "requested_reasoning_mode": requested_reasoning_mode,
+            "effective_reasoning_mode": requested_reasoning_mode,
+            "answer_path": "document_status",
+            "deep_fallback_applied": False,
+            "context_resolution": serialize_context_resolution(context_resolution),
+            "focus": focus_meta,
+            "document_focus": _document_focus_metadata(
+                context_resolution,
+                query_mode="status_only",
+            ),
+            "turn_context": {
+                "active_subject": context_resolution.active_subject,
+                "latest_topic_reference": context_resolution.latest_topic_reference,
+                "recent_summary": status_message,
+                "question_type": question_type,
+                "unresolved_references": context_resolution.unresolved_references,
+                "focus_type": context_resolution.focus_type,
+                "focus_id": context_resolution.focus_id,
+                "focus_label": context_resolution.focus_label,
+            },
+        }
+        yield make_stage_event("understanding", "Attachment linked", "done")
+        yield make_token_event(status_message)
+        yield make_sources_event([])
+        yield make_done_event(status_meta)
+        return
+
     standalone_query = context_resolution.standalone_query or normalized_query
     hyde_doc = await generate_hyde_document(standalone_query, http_client)
-    yield make_stage_event("understanding", "Context linked", "done")
+    yield make_stage_event(
+        "understanding",
+        "Attachment linked"
+        if context_resolution.focus_type == "document" and context_resolution.focus_id
+        else "Context linked",
+        "done",
+    )
 
     # ── Stage: Embedding ─────────────────────────────────────────────────────
     yield make_stage_event("embedding", "Embedding query...", "active")
@@ -468,12 +582,21 @@ async def run_query_pipeline(
 
     yield make_stage_event("embedding", "Query embedded", "done")
 
+    retrieval_document_id = document_id
+    if (
+        not retrieval_document_id
+        and context_resolution.focus_type == "document"
+        and context_resolution.focus_id
+        and context_resolution.action == "resolve"
+    ):
+        retrieval_document_id = context_resolution.focus_id
+
     # Check cache using the dense embedding as the lookup key
     # Only use cache for non-document-scoped queries (document-scoped answers
     # are document-specific and should not cross-contaminate the cache)
     library_generation = 0
     conversation_generation: int | None = None
-    if not document_id:
+    if not retrieval_document_id:
         library_generation, conversation_generation = await cache.get_generation_snapshot(
             conversation_id if session_scope_active else None
         )
@@ -521,8 +644,8 @@ async def run_query_pipeline(
             sparse_indices=sparse_indices,
             sparse_values=sparse_values,
             top_k=settings.retrieval_rerank_top_n,
-            document_id_filter=document_id,
-            session_id_filter=session_id,
+            document_id_filter=retrieval_document_id,
+            session_id_filter=None if retrieval_document_id else session_id,
             hyde_dense_vector=hyde_dense,
             hyde_sparse_indices=hyde_sparse_indices,
             hyde_sparse_values=hyde_sparse_values,
@@ -540,10 +663,12 @@ async def run_query_pipeline(
         # No relevant documents found — inform user gracefully
         logger.info("No relevant chunks retrieved for query")
         no_context_message = (
-            "This information is not available in the current HR knowledge base."
+            f"I could not extract enough relevant content from {context_resolution.focus_label or 'the uploaded document'}."
+            if retrieval_document_id and context_resolution.focus_type == "document"
+            else "This information is not available in the current HR knowledge base."
         )
         no_context_meta = {
-            "answer_path": "no_context",
+            "answer_path": "document_no_context" if retrieval_document_id else "no_context",
             "question_type": question_type,
             "reasoning_mode": requested_reasoning_mode,
             "requested_reasoning_mode": requested_reasoning_mode,
@@ -551,6 +676,11 @@ async def run_query_pipeline(
             "deep_fallback_applied": False,
             "deterministic_confidence": 0.0,
             "context_resolution": serialize_context_resolution(context_resolution),
+            "focus": focus_meta,
+            "document_focus": _document_focus_metadata(
+                context_resolution,
+                query_mode="document_scoped" if retrieval_document_id else "normal",
+            ),
             "turn_context": build_turn_context(
                 question=standalone_query,
                 answer_text=no_context_message,
@@ -653,7 +783,7 @@ async def run_query_pipeline(
         answer_path=answer_plan.answer_path,
     )
     response_meta = {
-        "answer_path": answer_plan.answer_path,
+        "answer_path": "document_scoped" if retrieval_document_id else answer_plan.answer_path,
         "question_type": question_type,
         "reasoning_mode": generation_policy.reasoning_mode,
         "requested_reasoning_mode": requested_reasoning_mode,
@@ -661,6 +791,11 @@ async def run_query_pipeline(
         "deep_fallback_applied": False,
         "deterministic_confidence": round(answer_plan.deterministic_confidence, 3),
         "context_resolution": serialize_context_resolution(context_resolution),
+        "focus": focus_meta,
+        "document_focus": _document_focus_metadata(
+            context_resolution,
+            query_mode="document_scoped" if retrieval_document_id else "normal",
+        ),
     }
 
     if answer_plan.high_confidence and answer_plan.answer_path == "deterministic":
@@ -676,7 +811,7 @@ async def run_query_pipeline(
         yield make_sources_event(source_chunks)
         yield make_done_event(response_meta)
 
-        if not document_id:
+        if not retrieval_document_id:
             try:
                 await cache.set(
                     query_embedding=dense_vector,
@@ -847,7 +982,7 @@ async def run_query_pipeline(
 
     # ── Post-pipeline: Store in Cache ────────────────────────────────────────
     final_answer = attempt_result.normalized_answer_text
-    if final_answer and not _invalid_answer_reason(final_answer) and not document_id:
+    if final_answer and not _invalid_answer_reason(final_answer) and not retrieval_document_id:
         try:
             await cache.set(
                 query_embedding=dense_vector,
@@ -870,7 +1005,7 @@ async def run_query_pipeline(
             "reranked": len(reranked_chunks),
             "answer_tokens": attempt_result.visible_token_count,
             "reasoning_tokens": attempt_result.reasoning_token_count,
-            "answer_path": "llm",
+            "answer_path": response_meta.get("answer_path", "llm"),
             "question_type": question_type,
             "requested_reasoning_mode": requested_reasoning_mode,
             "effective_reasoning_mode": response_meta["effective_reasoning_mode"],

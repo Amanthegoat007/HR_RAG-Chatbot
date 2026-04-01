@@ -144,6 +144,7 @@ async def query(request: QueryRequest, req: Request):
         user_role=getattr(request, "user_role", "employee"),
         session_id=session_id,
         session_scope_active=getattr(request, "session_scope_active", False),
+        conversation_working_set=getattr(request, "conversation_working_set", None),
         reasoning_mode=getattr(request, "reasoning_mode", None),
     )
 

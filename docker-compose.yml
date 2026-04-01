@@ -68,6 +68,11 @@ services:
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
       USER_USERNAME: ${USER_USERNAME:-hr_user}
       USER_PASSWORD_HASH: ${USER_PASSWORD_HASH}
+      BENCHMARK_USERNAME: ${BENCHMARK_USERNAME:-}
+      BENCHMARK_PASSWORD_HASH: ${BENCHMARK_PASSWORD_HASH:-}
+      FRONTEND_INTERNAL_URL: ${FRONTEND_INTERNAL_URL:-http://frontend}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-}
+      PROMETHEUS_PUBLIC_URL: ${PROMETHEUS_PUBLIC_URL:-}
       BACKEND_WORKERS: ${BACKEND_WORKERS:-2}
     volumes:
       - ./services/backend/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
@@ -121,6 +126,11 @@ services:
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
       USER_USERNAME: ${USER_USERNAME:-hr_user}
       USER_PASSWORD_HASH: ${USER_PASSWORD_HASH}
+      BENCHMARK_USERNAME: ${BENCHMARK_USERNAME:-}
+      BENCHMARK_PASSWORD_HASH: ${BENCHMARK_PASSWORD_HASH:-}
+      FRONTEND_INTERNAL_URL: ${FRONTEND_INTERNAL_URL:-http://frontend}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-}
+      PROMETHEUS_PUBLIC_URL: ${PROMETHEUS_PUBLIC_URL:-}
     volumes:
       - ./services/backend/app:/app/app:ro
       - ./shared:/app/shared:ro
@@ -167,6 +177,11 @@ services:
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
       USER_USERNAME: ${USER_USERNAME:-hr_user}
       USER_PASSWORD_HASH: ${USER_PASSWORD_HASH}
+      BENCHMARK_USERNAME: ${BENCHMARK_USERNAME:-}
+      BENCHMARK_PASSWORD_HASH: ${BENCHMARK_PASSWORD_HASH:-}
+      FRONTEND_INTERNAL_URL: ${FRONTEND_INTERNAL_URL:-http://frontend}
+      GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-}
+      PROMETHEUS_PUBLIC_URL: ${PROMETHEUS_PUBLIC_URL:-}
     volumes:
       - ./services/backend/app:/app/app:ro
       - ./shared:/app/shared:ro
@@ -451,6 +466,10 @@ services:
       context: ./monitoring
       dockerfile: Dockerfile
     container_name: monitoring
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
       - "3000:3000" # Grafana
       - "9090:9090" # Prometheus

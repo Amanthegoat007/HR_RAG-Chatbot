@@ -1,19 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
-import jwt
-from datetime import datetime, timedelta, timezone
 
 from app.models import LoginRequest, TokenResponse, UserProfile
 from app.config import settings
-from app.services.auth_service import authenticate_user
+from app.services.auth_service import (
+    authenticate_user,
+    create_access_token_for_user,
+    role_from_claims,
+)
 from app.dependencies import require_auth
 
 router = APIRouter()
-
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expiry_hours)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.jwt_secret, algorithm="HS256")
 
 def _set_auth_cookie(response: Response, access_token: str) -> None:
     """Set the JWT as an HttpOnly cookie with security best practices."""
@@ -30,7 +26,7 @@ def _set_auth_cookie(response: Response, access_token: str) -> None:
 @router.post("/login", response_model=TokenResponse)
 async def login(request: LoginRequest, response: Response):
     username, role = authenticate_user(request.username, request.password)
-    
+        
     if not username:
         raise HTTPException(
             status_code=401,
@@ -38,7 +34,7 @@ async def login(request: LoginRequest, response: Response):
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    access_token = create_access_token({"sub": username, "roles": [f"ROLE_{role.upper()}"], "groups": []})
+    access_token = create_access_token_for_user(username, role)
     
     # Set HTTP-only cookie (the token is NOT returned in the response body for security)
     _set_auth_cookie(response, access_token)
@@ -67,17 +63,16 @@ async def logout(response: Response):
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(response: Response, payload: dict = Depends(require_auth)):
     # Create new token with same payload but new expiry
-    access_token = create_access_token({
-        "sub": payload.get("sub"),
-        "roles": payload.get("roles", []),
-        "groups": payload.get("groups", [])
-    })
+    access_token = create_access_token_for_user(
+        payload.get("sub", ""),
+        role_from_claims(payload.get("roles", [])),
+    )
     
     _set_auth_cookie(response, access_token)
     
     # Extract role for response
     roles = payload.get("roles", [])
-    role = "admin" if "ROLE_ADMINISTRATOR" in roles else "user"
+    role = role_from_claims(roles)
     
     return TokenResponse(
         expires_in=settings.jwt_expiry_hours * 3600,

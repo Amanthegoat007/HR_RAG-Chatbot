@@ -4,7 +4,7 @@ import CopilotLayout from "@/layouts/CopilotLayout";
 import AppShellLayout from "@/layouts/AppShellLayout";
 import LoginPage from "@/pages/LoginPage";
 import CoPilotPage from "@/pages/CoPilotPage";
-import { DocumentManagementPage } from "@/pages";
+import { BenchmarkPage, DocumentManagementPage } from "@/pages";
 import { ProtectedRoute, RoleProtectedRoute } from "@/components/auth";
 import { useAppSelector } from "@/store/hooks";
 
@@ -57,6 +57,14 @@ export default function AppRoutes() {
           element={
             <RoleProtectedRoute roles={["ROLE_ADMIN", "ROLE_ADMINISTRATOR"]}>
               <DocumentManagementPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/benchmark"
+          element={
+            <RoleProtectedRoute roles={["ROLE_BENCHMARK"]}>
+              <BenchmarkPage />
             </RoleProtectedRoute>
           }
         />

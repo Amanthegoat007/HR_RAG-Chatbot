@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 import asyncpg
 import httpx
+from minio.error import S3Error
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
 from app import db
@@ -122,7 +123,35 @@ async def _create_document_upload(
             raise HTTPException(status_code=404, detail="Conversation not found")
 
     content_type = file.content_type or "application/octet-stream"
-    minio_path = upload_file(minio_client, document_id, filename, file_bytes, content_type)
+    try:
+        minio_path = upload_file(
+            minio_client,
+            document_id,
+            filename,
+            file_bytes,
+            content_type,
+        )
+    except S3Error as exc:
+        logger.warning(
+            "Document upload failed while storing original file",
+            extra={
+                "document_id": document_id,
+                "upload_filename": filename,
+                "scope": scope,
+                "conversation_id": conversation_id,
+                "error_code": exc.code,
+                "error": str(exc),
+            },
+        )
+        if exc.code == "XMinioStorageFull":
+            raise HTTPException(
+                status_code=507,
+                detail="Storage is full right now. Please free up disk space and try the upload again.",
+            ) from exc
+        raise HTTPException(
+            status_code=502,
+            detail="File storage is temporarily unavailable. Please try again.",
+        ) from exc
 
     initial_metadata = {"filename": filename, "format": ext, "scope": scope}
     if scope == "session" and conversation_id:

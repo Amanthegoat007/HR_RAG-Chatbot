@@ -88,12 +88,61 @@ def test_build_assistant_message_metadata_includes_context_resolution():
                 "unresolved_references": ["it"],
                 "clarification_question": None,
                 "source": "llm",
+                "focus_type": "policy",
+                "focus_id": None,
+                "focus_label": "Probation policy",
+                "action": "resolve",
             },
         },
     )
 
     assert metadata["contextResolution"]["resolutionMode"] == "resolved_follow_up"
     assert metadata["contextResolution"]["source"] == "llm"
+    assert metadata["contextResolution"]["focusType"] == "policy"
+
+
+def test_build_assistant_message_metadata_includes_document_focus():
+    from app.services.assistant_response_builder import build_assistant_message_metadata
+
+    metadata = build_assistant_message_metadata(
+        question="Explain this uploaded document",
+        answer_text="## Utility Bill\n\nThis is a monthly utility bill.",
+        sources=[],
+        upstream_meta={
+            "question_type": "fact",
+            "reasoning_mode": "fast",
+            "context_resolution": {
+                "resolution_mode": "direct",
+                "standalone_query": "Explain and summarize the uploaded document Jane_Doe_Jan_Bill_Annotated.png.",
+                "confidence": 0.94,
+                "active_subject": "Jane_Doe_Jan_Bill_Annotated.png",
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": [],
+                "clarification_question": None,
+                "source": "fallback",
+                "focus_type": "document",
+                "focus_id": "doc-123",
+                "focus_label": "Jane_Doe_Jan_Bill_Annotated.png",
+                "action": "resolve",
+            },
+            "focus": {
+                "type": "document",
+                "id": "doc-123",
+                "label": "Jane_Doe_Jan_Bill_Annotated.png",
+            },
+            "document_focus": {
+                "document_id": "doc-123",
+                "display_name": "Jane_Doe_Jan_Bill_Annotated.png",
+                "resolution_source": "composer",
+                "query_mode": "document_scoped",
+            },
+        },
+    )
+
+    assert metadata["focus"]["type"] == "document"
+    assert metadata["documentFocus"]["documentId"] == "doc-123"
+    assert metadata["documentFocus"]["queryMode"] == "document_scoped"
 
 
 def test_build_trust_summary_uses_document_metadata_and_detects_conflicts():

@@ -63,6 +63,7 @@ class SendMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
     language: Optional[str] = "en"
     reasoningMode: Optional[Literal["fast", "deep"]] = None
+    activeAttachmentDocumentId: Optional[str] = None
 
 class SendMessageResponse(BaseModel):
     userMessage: MessageItem
@@ -109,6 +110,65 @@ class DeleteResponse(BaseModel):
     message: str
     vectors_deleted: int
     minio_deleted: bool
+
+
+# --- Benchmark Models ---
+
+BenchmarkPreset = Literal[
+    "smoke-1",
+    "smoke-5",
+    "smoke-10",
+    "smoke-20",
+    "smoke-30",
+    "smoke-custom",
+]
+
+class BenchmarkRunRequest(BaseModel):
+    preset: BenchmarkPreset
+    concurrency: Optional[int] = Field(default=None, ge=1, le=30)
+
+
+class BenchmarkMonitoringLinks(BaseModel):
+    grafanaUrl: str
+    prometheusUrl: str
+
+
+class BenchmarkTierSummary(BaseModel):
+    concurrency: int
+    totalRequests: int
+    successRate: float
+    ttftP95Seconds: Optional[float] = None
+    totalP95Seconds: Optional[float] = None
+    throughputRps: float
+    tierStartedAtUtc: Optional[str] = None
+    tierFinishedAtUtc: Optional[str] = None
+    topErrors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class BenchmarkRunStatusResponse(BaseModel):
+    jobId: str
+    preset: BenchmarkPreset
+    requestedConcurrency: Optional[int] = None
+    status: Literal["queued", "running", "succeeded", "failed"]
+    queuedAtUtc: str
+    startedAtUtc: Optional[str] = None
+    finishedAtUtc: Optional[str] = None
+    summary: Optional[BenchmarkTierSummary] = None
+    error: Optional[str] = None
+    summaryPath: Optional[str] = None
+    resultsPath: Optional[str] = None
+
+
+class BenchmarkBootstrapResponse(BaseModel):
+    monitoring: BenchmarkMonitoringLinks
+    canRun: bool
+    activeRun: Optional[BenchmarkRunStatusResponse] = None
+    latestRun: Optional[BenchmarkRunStatusResponse] = None
+
+
+class BenchmarkRunCreatedResponse(BaseModel):
+    jobId: str
+    status: Literal["queued", "running"]
 
 # --- Health Models ---
 

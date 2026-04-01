@@ -11,6 +11,7 @@ import time
 from contextlib import asynccontextmanager
 
 import httpx
+import redis.asyncio as aioredis
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -23,7 +24,7 @@ from app.db import create_db_pool, ensure_runtime_schema
 from app.minio_client import get_minio_client, ensure_bucket_exists
 from app.qdrant_client_wrapper import get_qdrant_client, ensure_collection_exists
 
-from app.routes import auth, conversations, messages, documents
+from app.routes import auth, benchmark, conversations, documents, messages
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +35,10 @@ async def lifespan(app: FastAPI):
     app.state.http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(300.0, connect=10.0),
         limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+    )
+    app.state.redis = aioredis.from_url(
+        settings.redis_url,
+        decode_responses=True,
     )
 
     # Initialize MinIO
@@ -50,6 +55,7 @@ async def lifespan(app: FastAPI):
 
     # Cleanup
     await app.state.http_client.aclose()
+    await app.state.redis.aclose()
     await db_pool.close()
 
 app = FastAPI(
@@ -83,6 +89,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(conversations.router, prefix="/api/conversations", tags=["Conversations"])
 app.include_router(messages.router, prefix="/api/messages", tags=["Messages"])
 app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
+app.include_router(benchmark.router, prefix="/api/benchmark", tags=["Benchmark"])
 
 async def _http_dependency_status(
     client: httpx.AsyncClient,
