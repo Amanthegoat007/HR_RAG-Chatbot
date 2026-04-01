@@ -44,7 +44,8 @@ def test_llm_first_resolver_returns_direct_for_clear_query(monkeypatch):
                 "focus_type": "policy",
                 "focus_id": None,
                 "focus_label": "Paid Time Off policy",
-                "action": "resolve",
+                "action": "retrieve",
+                "interaction_type": "knowledge_request",
             }
         )
 
@@ -88,7 +89,8 @@ def test_llm_first_resolver_uses_cache_before_calling_llm(monkeypatch):
             "focus_type": "policy",
             "focus_id": None,
             "focus_label": "Probation policy",
-            "action": "resolve",
+            "action": "retrieve",
+            "interaction_type": "knowledge_request",
         }
     )
 
@@ -142,6 +144,7 @@ def test_llm_first_resolver_retries_invalid_json_once(monkeypatch):
                 "focus_id": None,
                 "focus_label": None,
                 "action": "clarify",
+                "interaction_type": "clarify",
             }
         )
 
@@ -227,6 +230,7 @@ def test_document_reference_resolves_to_single_ready_session_document(monkeypatc
                 "focus_id": None,
                 "focus_label": None,
                 "action": "clarify",
+                "interaction_type": "clarify",
             }
         )
 
@@ -253,7 +257,7 @@ def test_document_reference_resolves_to_single_ready_session_document(monkeypatc
         )
     )
 
-    assert resolution.action == "resolve"
+    assert resolution.action == "retrieve"
     assert resolution.focus_type == "document"
     assert resolution.focus_id == "doc-1"
     assert "uploaded document" in resolution.standalone_query.lower()
@@ -277,6 +281,7 @@ def test_document_reference_returns_status_only_for_processing_upload(monkeypatc
                 "focus_id": None,
                 "focus_label": None,
                 "action": "clarify",
+                "interaction_type": "clarify",
             }
         )
 
@@ -306,3 +311,236 @@ def test_document_reference_returns_status_only_for_processing_upload(monkeypatc
     assert resolution.action == "status_only"
     assert resolution.focus_type == "document"
     assert resolution.focus_id == "doc-2"
+
+
+def test_greeting_query_routes_through_llm_semantic_router(monkeypatch):
+    from app import context_resolver
+
+    calls = {"count": 0}
+
+    async def fake_generate_text(**kwargs):
+        calls["count"] += 1
+        assert "Latest user query: hello" in kwargs["messages"][-1]["content"]
+        return json.dumps(
+            {
+                "resolution_mode": "direct",
+                "standalone_query": "hello",
+                "confidence": 0.97,
+                "active_subject": "HR copilot",
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": [],
+                "clarification_question": None,
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "direct_response",
+                "interaction_type": "greeting",
+                "assistant_response_style": "greeting_warm",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "hello",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-greet-1",
+            session_scope_active=False,
+        )
+    )
+
+    assert calls["count"] == 1
+    assert resolution.action == "direct_response"
+    assert resolution.interaction_type == "greeting"
+    assert resolution.assistant_response_style == "greeting_warm"
+
+
+def test_capability_query_routes_through_llm_semantic_router(monkeypatch):
+    from app import context_resolver
+
+    calls = {"count": 0}
+
+    async def fake_generate_text(**kwargs):
+        calls["count"] += 1
+        assert "ok tell me what you can overall do" in kwargs["messages"][-1]["content"].lower()
+        return json.dumps(
+            {
+                "resolution_mode": "direct",
+                "standalone_query": "ok tell me what you can overall do",
+                "confidence": 0.95,
+                "active_subject": "HR copilot",
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": [],
+                "clarification_question": None,
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "direct_response",
+                "interaction_type": "capability",
+                "assistant_response_style": "capability_overview",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "ok tell me what you can overall do",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-greet-2",
+            session_scope_active=False,
+        )
+    )
+
+    assert calls["count"] == 1
+    assert resolution.action == "direct_response"
+    assert resolution.interaction_type == "capability"
+    assert resolution.assistant_response_style == "capability_overview"
+
+
+def test_acknowledgement_query_routes_to_direct_response(monkeypatch):
+    from app import context_resolver
+
+    async def fake_generate_text(**kwargs):
+        assert "Latest user query: that's good" in kwargs["messages"][-1]["content"]
+        return json.dumps(
+            {
+                "resolution_mode": "direct",
+                "standalone_query": "that's good",
+                "confidence": 0.92,
+                "active_subject": "HR copilot",
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": [],
+                "clarification_question": None,
+                "focus_type": "none",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "direct_response",
+                "interaction_type": "acknowledgement",
+                "assistant_response_style": "acknowledgement_positive",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "that's good",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-greet-ack",
+            session_scope_active=False,
+        )
+    )
+
+    assert resolution.action == "direct_response"
+    assert resolution.interaction_type == "acknowledgement"
+    assert resolution.assistant_response_style == "acknowledgement_positive"
+
+
+def test_mixed_greeting_query_is_semantically_routed_to_retrieval(monkeypatch):
+    from app import context_resolver
+
+    async def fake_generate_text(**kwargs):
+        user_message = kwargs["messages"][-1]["content"]
+        assert "Latest user query: hi, explain probation policy" in user_message
+        return json.dumps(
+            {
+                "resolution_mode": "direct",
+                "standalone_query": "Explain probation policy",
+                "confidence": 0.94,
+                "active_subject": "Probation policy",
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": [],
+                "clarification_question": None,
+                "focus_type": "policy",
+                "focus_id": None,
+                "focus_label": "Probation policy",
+                "action": "retrieve",
+                "interaction_type": "knowledge_request",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "hi, explain probation policy",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-greet-3",
+            session_scope_active=False,
+        )
+    )
+
+    assert resolution.action == "retrieve"
+    assert resolution.interaction_type == "knowledge_request"
+    assert resolution.standalone_query == "Explain probation policy"
+
+
+def test_generic_document_reference_clarifies_when_multiple_ready_documents_exist(monkeypatch):
+    from app import context_resolver
+
+    async def fake_generate_text(**kwargs):
+        return json.dumps(
+            {
+                "resolution_mode": "direct",
+                "standalone_query": "Explain this uploaded document",
+                "confidence": 0.88,
+                "active_subject": None,
+                "latest_topic_reference": None,
+                "recent_answer_summary": None,
+                "unresolved_references": ["this"],
+                "clarification_question": None,
+                "focus_type": "document",
+                "focus_id": None,
+                "focus_label": None,
+                "action": "retrieve",
+                "interaction_type": "document_request",
+            }
+        )
+
+    monkeypatch.setattr(context_resolver, "generate_text", fake_generate_text)
+
+    resolution = asyncio.run(
+        context_resolver.resolve_conversation_context(
+            "Explain this uploaded document",
+            [],
+            http_client=None,
+            cache=None,
+            conversation_id="conv-doc-3",
+            session_scope_active=True,
+            conversation_working_set={
+                "session_documents": [
+                    {
+                        "document_id": "doc-1",
+                        "display_name": "Offer_Letter.pdf",
+                        "status": "ready",
+                    },
+                    {
+                        "document_id": "doc-2",
+                        "display_name": "Medical_Benefits.pdf",
+                        "status": "ready",
+                    },
+                ],
+                "latest_ready_document_id": "doc-2",
+            },
+        )
+    )
+
+    assert resolution.action == "clarify"
+    assert resolution.interaction_type == "clarify"
+    assert resolution.clarification_question is not None
+    assert "Offer_Letter.pdf" in resolution.clarification_question
+    assert "Medical_Benefits.pdf" in resolution.clarification_question

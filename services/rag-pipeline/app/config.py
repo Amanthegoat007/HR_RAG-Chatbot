@@ -87,9 +87,10 @@ class RagSettings(BaseSettings):
     top_n_rerank: int = 8
     top_n_rerank_calc: int = 4
     top_n_rerank_list: int = 6
-    score_threshold: float = 0.2
+    score_threshold: float = 0.45
 
     # ─── Semantic Cache ───────────────────────────────────────────────
+    cache_namespace_version: str = "v3"
     cache_similarity_threshold: float = 0.92
     cache_ttl_seconds: int = 86400  # 24 hours
     context_resolution_history_turns: int = 5

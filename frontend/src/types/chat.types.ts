@@ -6,6 +6,26 @@ export interface PipelineStage {
 
 export type ReasoningMode = "fast" | "deep";
 
+export type InteractionType =
+  | "knowledge_request"
+  | "capability"
+  | "greeting"
+  | "acknowledgement"
+  | "closing"
+  | "document_request"
+  | "clarify"
+  | "assistant_capability"
+  | "greeting_or_ack"
+  | "document"
+  | "policy_or_topic";
+
+export type ContextAction =
+  | "direct_response"
+  | "retrieve"
+  | "clarify"
+  | "status_only"
+  | "resolve";
+
 export interface SourceInfo {
   filename: string;
   section: string;
@@ -71,6 +91,9 @@ export interface MessageMetadata {
   effectiveReasoningMode?: ReasoningMode;
   questionType?: string;
   answerPath?: string;
+  interactionType?: InteractionType;
+  routerConfidence?: number;
+  relevanceGuardReason?: string;
   deterministicConfidence?: number;
   deepFallbackApplied?: boolean;
   deepFallbackReason?: "no_visible_tokens" | "empty_answer" | "title_only_answer";
@@ -84,6 +107,7 @@ export interface MessageMetadata {
     recentSummary?: string;
     questionType?: string;
     unresolvedReferences?: string[];
+    interactionType?: InteractionType;
   };
   contextResolution?: {
     resolutionMode?: "direct" | "resolved_follow_up" | "clarify";
@@ -98,8 +122,10 @@ export interface MessageMetadata {
     focusType?: "topic" | "policy" | "document" | "none";
     focusId?: string;
     focusLabel?: string;
-    action?: "resolve" | "clarify" | "status_only";
+    action?: ContextAction;
     focusSource?: string;
+    interactionType?: InteractionType;
+    assistantResponseStyle?: "greeting_warm" | "capability_overview" | "acknowledgement_positive" | "closing_helpful";
   };
   focus?: {
     type?: "topic" | "policy" | "document" | "none";

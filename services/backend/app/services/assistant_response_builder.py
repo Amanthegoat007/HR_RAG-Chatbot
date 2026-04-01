@@ -33,12 +33,14 @@ def build_assistant_message_metadata(
 ) -> dict[str, Any]:
     cleaned_text = normalize_markdown_answer(answer_text, sources)
     meta = dict(upstream_meta or {})
-    response_payload = build_response_payload(
-        question=question,
-        answer_text=cleaned_text,
-        sources=sources or [],
-        upstream_meta=meta,
-    )
+    response_payload = None
+    if meta.get("answer_path") != "assistant_direct":
+        response_payload = build_response_payload(
+            question=question,
+            answer_text=cleaned_text,
+            sources=sources or [],
+            upstream_meta=meta,
+        )
     effective_reasoning_mode = (
         meta.get("effective_reasoning_mode")
         or meta.get("reasoning_mode")
@@ -71,6 +73,7 @@ def build_assistant_message_metadata(
             "recentSummary": turn_context.get("recent_summary"),
             "questionType": turn_context.get("question_type"),
             "unresolvedReferences": turn_context.get("unresolved_references", []),
+            "interactionType": turn_context.get("interaction_type"),
         }
     if meta.get("context_resolution"):
         context_resolution = meta["context_resolution"]
@@ -89,7 +92,10 @@ def build_assistant_message_metadata(
             "focusLabel": context_resolution.get("focus_label"),
             "action": context_resolution.get("action"),
             "focusSource": context_resolution.get("focus_source"),
+            "interactionType": context_resolution.get("interaction_type"),
+            "assistantResponseStyle": context_resolution.get("assistant_response_style"),
         }
+        metadata["routerConfidence"] = context_resolution.get("confidence", 0.0)
     if meta.get("focus"):
         metadata["focus"] = {
             "type": meta["focus"].get("type"),
@@ -112,6 +118,12 @@ def build_assistant_message_metadata(
     ):
         if upstream_key in meta:
             metadata[metadata_key] = meta[upstream_key]
+    if meta.get("interaction_type"):
+        metadata["interactionType"] = meta["interaction_type"]
+    if meta.get("relevance_guard_reason"):
+        metadata["relevanceGuardReason"] = meta["relevance_guard_reason"]
+    if "router_confidence" in meta:
+        metadata["routerConfidence"] = meta["router_confidence"]
 
     return metadata
 

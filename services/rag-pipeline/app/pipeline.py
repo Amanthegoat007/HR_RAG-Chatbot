@@ -405,6 +405,102 @@ def _document_focus_metadata(context_resolution, *, query_mode: str) -> dict[str
     }
 
 
+def _assistant_direct_message(context_resolution) -> str:
+    if context_resolution.assistant_response:
+        return context_resolution.assistant_response
+
+    style = context_resolution.assistant_response_style
+    if style == "greeting_warm" or context_resolution.interaction_type == "greeting":
+        return (
+            "Hi. I can help with HR policies, benefits, leave, payroll, onboarding, "
+            "and uploaded documents in this conversation."
+        )
+    if style == "capability_overview" or context_resolution.interaction_type == "capability":
+        return (
+            "I can help with HR policies, benefits, leave, payroll, onboarding, and "
+            "uploaded documents in this conversation. Ask a policy question or upload "
+            "a document for me to explain."
+        )
+    if style == "acknowledgement_positive" or context_resolution.interaction_type == "acknowledgement":
+        return "Glad to help. Ask another HR question or upload a document anytime."
+    if style == "closing_helpful" or context_resolution.interaction_type == "closing":
+        return "Happy to help. Come back anytime with another HR policy or document question."
+    return "I can help with HR policies, benefits, leave, payroll, onboarding, and uploaded documents."
+
+
+def _is_low_information_query(query: str, interaction_type: str | None) -> bool:
+    if interaction_type in {"greeting", "acknowledgement", "capability", "closing"}:
+        return True
+    normalized = " ".join((query or "").lower().split())
+    if not normalized:
+        return True
+    tokens = re.findall(r"\w+", normalized)
+    if len(tokens) > 3:
+        return False
+    if any(term in normalized for term in ("policy", "document", "file", "upload", "uploaded")):
+        return False
+    hr_terms = (
+        "leave",
+        "pto",
+        "benefit",
+        "benefits",
+        "payroll",
+        "probation",
+        "onboarding",
+        "salary",
+        "insurance",
+        "medical",
+        "holiday",
+        "ticket",
+        "gratuity",
+        "reimbursement",
+        "allowance",
+        "contract",
+        "offer",
+    )
+    return not any(term in normalized for term in hr_terms)
+
+
+def _top_rerank_score(reranked_chunks: list[dict[str, Any]]) -> float:
+    if not reranked_chunks:
+        return 0.0
+    top = reranked_chunks[0]
+    return float(top.get("rerank_score") or top.get("score") or 0.0)
+
+
+def _assistant_direct_meta(
+    *,
+    question_type: str,
+    requested_reasoning_mode: Literal["fast", "deep"],
+    context_resolution,
+    focus_meta: dict[str, Any],
+    answer_text: str,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    metadata = {
+        "question_type": question_type,
+        "reasoning_mode": requested_reasoning_mode,
+        "requested_reasoning_mode": requested_reasoning_mode,
+        "effective_reasoning_mode": requested_reasoning_mode,
+        "answer_path": "assistant_direct",
+        "deep_fallback_applied": False,
+        "router_confidence": context_resolution.confidence,
+        "context_resolution": serialize_context_resolution(context_resolution),
+        "focus": focus_meta,
+        "interaction_type": context_resolution.interaction_type,
+        "turn_context": build_turn_context(
+            question=context_resolution.standalone_query or "",
+            answer_text=answer_text,
+            question_type=question_type,
+            source_chunks=[],
+            context_resolution=context_resolution,
+        ),
+    }
+    if reason:
+        metadata["relevance_guard_reason"] = reason
+    return metadata
+
+
 async def run_query_pipeline(
     query: str,
     document_id: Optional[str],
@@ -476,6 +572,21 @@ async def run_query_pipeline(
         "id": context_resolution.focus_id,
         "label": context_resolution.focus_label,
     }
+    if context_resolution.action == "direct_response":
+        assistant_text = _assistant_direct_message(context_resolution)
+        assistant_meta = _assistant_direct_meta(
+            question_type=question_type,
+            requested_reasoning_mode=requested_reasoning_mode,
+            context_resolution=context_resolution,
+            focus_meta=focus_meta,
+            answer_text=assistant_text,
+        )
+        yield make_stage_event("understanding", "Ready to help", "done")
+        yield make_token_event(assistant_text)
+        yield make_sources_event([])
+        yield make_done_event(assistant_meta)
+        return
+
     if context_resolution.clarification_needed:
         clarification_meta = {
             "question_type": question_type,
@@ -486,6 +597,7 @@ async def run_query_pipeline(
             "deep_fallback_applied": False,
             "context_resolution": serialize_context_resolution(context_resolution),
             "focus": focus_meta,
+            "interaction_type": context_resolution.interaction_type,
             "turn_context": {
                 "active_subject": context_resolution.active_subject,
                 "latest_topic_reference": context_resolution.latest_topic_reference,
@@ -495,6 +607,7 @@ async def run_query_pipeline(
                 "focus_type": context_resolution.focus_type,
                 "focus_id": context_resolution.focus_id,
                 "focus_label": context_resolution.focus_label,
+                "interaction_type": context_resolution.interaction_type,
             },
         }
         yield make_stage_event("understanding", "Need clarification", "done")
@@ -517,6 +630,7 @@ async def run_query_pipeline(
             "deep_fallback_applied": False,
             "context_resolution": serialize_context_resolution(context_resolution),
             "focus": focus_meta,
+            "interaction_type": context_resolution.interaction_type,
             "document_focus": _document_focus_metadata(
                 context_resolution,
                 query_mode="status_only",
@@ -530,6 +644,7 @@ async def run_query_pipeline(
                 "focus_type": context_resolution.focus_type,
                 "focus_id": context_resolution.focus_id,
                 "focus_label": context_resolution.focus_label,
+                "interaction_type": context_resolution.interaction_type,
             },
         }
         yield make_stage_event("understanding", "Attachment linked", "done")
@@ -539,6 +654,18 @@ async def run_query_pipeline(
         return
 
     standalone_query = context_resolution.standalone_query or normalized_query
+    retrieval_document_id = document_id
+    if (
+        not retrieval_document_id
+        and context_resolution.focus_type == "document"
+        and context_resolution.focus_id
+        and context_resolution.action == "retrieve"
+    ):
+        retrieval_document_id = context_resolution.focus_id
+    allow_semantic_cache = (
+        not retrieval_document_id
+        and not _is_low_information_query(standalone_query, context_resolution.interaction_type)
+    )
     hyde_doc = await generate_hyde_document(standalone_query, http_client)
     yield make_stage_event(
         "understanding",
@@ -582,21 +709,12 @@ async def run_query_pipeline(
 
     yield make_stage_event("embedding", "Query embedded", "done")
 
-    retrieval_document_id = document_id
-    if (
-        not retrieval_document_id
-        and context_resolution.focus_type == "document"
-        and context_resolution.focus_id
-        and context_resolution.action == "resolve"
-    ):
-        retrieval_document_id = context_resolution.focus_id
-
     # Check cache using the dense embedding as the lookup key
     # Only use cache for non-document-scoped queries (document-scoped answers
     # are document-specific and should not cross-contaminate the cache)
     library_generation = 0
     conversation_generation: int | None = None
-    if not retrieval_document_id:
+    if allow_semantic_cache:
         library_generation, conversation_generation = await cache.get_generation_snapshot(
             conversation_id if session_scope_active else None
         )
@@ -677,6 +795,7 @@ async def run_query_pipeline(
             "deterministic_confidence": 0.0,
             "context_resolution": serialize_context_resolution(context_resolution),
             "focus": focus_meta,
+            "interaction_type": context_resolution.interaction_type,
             "document_focus": _document_focus_metadata(
                 context_resolution,
                 query_mode="document_scoped" if retrieval_document_id else "normal",
@@ -749,6 +868,30 @@ async def run_query_pipeline(
 
     yield make_stage_event("reranking", "Results ranked", "done")
 
+    top_rerank_score = _top_rerank_score(reranked_chunks)
+    if (
+        not retrieval_document_id
+        and _is_low_information_query(standalone_query, context_resolution.interaction_type)
+        and top_rerank_score < settings.score_threshold
+    ):
+        redirect_text = (
+            "I can help with HR policies, benefits, leave, payroll, onboarding, and uploaded documents. "
+            "Ask me a specific HR question and I'll jump in."
+        )
+        redirect_meta = _assistant_direct_meta(
+            question_type=question_type,
+            requested_reasoning_mode=requested_reasoning_mode,
+            context_resolution=context_resolution,
+            focus_meta=focus_meta,
+            answer_text=redirect_text,
+            reason="low_information_low_relevance",
+        )
+        yield make_stage_event("generating", "Need a more specific HR question", "done")
+        yield make_token_event(redirect_text)
+        yield make_sources_event([])
+        yield make_done_event(redirect_meta)
+        return
+
     # ── Stage: Generating ─────────────────────────────────────────────────────
     yield make_stage_event("generating", "Generating response...", "active")
 
@@ -792,6 +935,7 @@ async def run_query_pipeline(
         "deterministic_confidence": round(answer_plan.deterministic_confidence, 3),
         "context_resolution": serialize_context_resolution(context_resolution),
         "focus": focus_meta,
+        "interaction_type": context_resolution.interaction_type,
         "document_focus": _document_focus_metadata(
             context_resolution,
             query_mode="document_scoped" if retrieval_document_id else "normal",
@@ -811,7 +955,7 @@ async def run_query_pipeline(
         yield make_sources_event(source_chunks)
         yield make_done_event(response_meta)
 
-        if not retrieval_document_id:
+        if allow_semantic_cache:
             try:
                 await cache.set(
                     query_embedding=dense_vector,
@@ -982,7 +1126,7 @@ async def run_query_pipeline(
 
     # ── Post-pipeline: Store in Cache ────────────────────────────────────────
     final_answer = attempt_result.normalized_answer_text
-    if final_answer and not _invalid_answer_reason(final_answer) and not retrieval_document_id:
+    if final_answer and not _invalid_answer_reason(final_answer) and allow_semantic_cache:
         try:
             await cache.set(
                 query_embedding=dense_vector,

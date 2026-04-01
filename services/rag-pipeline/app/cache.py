@@ -38,7 +38,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 # Redis key prefix for all semantic cache entries
-CACHE_PREFIX = "semantic_cache:"
+CACHE_PREFIX = f"semantic_cache:{settings.cache_namespace_version}:"
 LIBRARY_GENERATION_KEY = "cache_generation:library"
 CONVERSATION_GENERATION_PREFIX = "cache_generation:conversation:"
 
@@ -327,6 +327,7 @@ class ContextResolutionCache:
         digest = hashlib.md5(
             json.dumps(
                 {
+                    "resolver_version": settings.cache_namespace_version,
                     "conversation_id": conversation_id,
                     "query": " ".join((query or "").split()),
                     "history": compact_history,

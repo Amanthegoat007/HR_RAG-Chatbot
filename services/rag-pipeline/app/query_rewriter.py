@@ -1,3 +1,12 @@
+"""
+Legacy helper module.
+
+The live production path resolves follow-ups and document focus through
+context_resolver.py. This module is kept only for backward compatibility
+and offline experimentation, and it should not be treated as the runtime
+source of truth for conversational resolution.
+"""
+
 import logging
 import re
 import time

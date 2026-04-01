@@ -15,6 +15,23 @@ from app.llm_client import generate_text
 
 logger = logging.getLogger(__name__)
 
+InteractionType = Literal[
+    "knowledge_request",
+    "capability",
+    "greeting",
+    "acknowledgement",
+    "closing",
+    "document_request",
+    "clarify",
+]
+
+AssistantResponseStyle = Literal[
+    "greeting_warm",
+    "capability_overview",
+    "acknowledgement_positive",
+    "closing_helpful",
+]
+
 REFERENCE_MARKERS = (
     "it",
     "they",
@@ -75,27 +92,112 @@ DOCUMENT_UNDERSTANDING_MARKERS = (
 PROCESSING_STATUSES = {"pending", "normalizing", "processing", "embedding"}
 STATUS_ONLY_STATUSES = PROCESSING_STATUSES | {"needs_review", "failed"}
 
+GREETING_PHRASES = (
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "good night",
+    "hello there",
+    "hey there",
+    "what's up",
+    "whats up",
+    "hi",
+    "hello",
+    "hey",
+    "yo",
+    "hiya",
+    "sup",
+)
+
+ACKNOWLEDGEMENT_PHRASES = (
+    "thank you so much",
+    "thank you",
+    "thanks a lot",
+    "many thanks",
+    "ok thanks",
+    "okay thanks",
+    "that's good",
+    "thats good",
+    "sounds good",
+    "thanks",
+    "got it",
+    "okay",
+    "ok",
+    "cool",
+    "great",
+    "nice",
+    "hmm",
+    "hmmm",
+)
+
+CLOSING_PHRASES = (
+    "see you later",
+    "talk later",
+    "goodbye",
+    "see you",
+    "bye",
+)
+
+CAPABILITY_PATTERNS = (
+    "who are you",
+    "what can you do",
+    "how can you help",
+    "how do you help",
+    "what do you do",
+    "tell me what you can do",
+    "tell me what you can overall do",
+)
+
+HR_DOMAIN_TERMS = (
+    "policy",
+    "policies",
+    "leave",
+    "pto",
+    "paid time off",
+    "benefit",
+    "benefits",
+    "payroll",
+    "probation",
+    "onboarding",
+    "notice",
+    "overtime",
+    "salary",
+    "insurance",
+    "medical",
+    "holiday",
+    "ticket",
+    "gratuity",
+    "reimbursement",
+    "allowance",
+    "contract",
+    "offer",
+    "document",
+    "file",
+    "upload",
+    "uploaded",
+)
+
 DEFAULT_DOMAIN_EXAMPLES = """Example 1:
 Conversation:
 - User: Explain the probation policy.
 - Assistant: Probation lasts 6 months and can be extended once with approval.
 Latest query: Can it be extended?
 Output:
-{"resolution_mode":"resolved_follow_up","standalone_query":"Can the probation period be extended under the probation policy?","confidence":0.94,"active_subject":"Probation policy","latest_topic_reference":"Probation policy","recent_answer_summary":"Probation lasts 6 months and can be extended once with approval.","unresolved_references":["it"],"clarification_question":null,"focus_type":"policy","focus_id":null,"focus_label":"Probation policy","action":"resolve"}
+{"resolution_mode":"resolved_follow_up","standalone_query":"Can the probation period be extended under the probation policy?","confidence":0.94,"active_subject":"Probation policy","latest_topic_reference":"Probation policy","recent_answer_summary":"Probation lasts 6 months and can be extended once with approval.","unresolved_references":["it"],"clarification_question":null,"focus_type":"policy","focus_id":null,"focus_label":"Probation policy","action":"retrieve","interaction_type":"knowledge_request"}
 
 Example 2:
 Working set:
 - Screenshot 2026-04-01.png [ready]
 Latest query: Can you explain this uploaded document?
 Output:
-{"resolution_mode":"direct","standalone_query":"Explain and summarize the uploaded document Screenshot 2026-04-01.png, including what it is and what it is used for.","confidence":0.95,"active_subject":"Screenshot 2026-04-01.png","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":["this"],"clarification_question":null,"focus_type":"document","focus_id":"Screenshot 2026-04-01.png","focus_label":"Screenshot 2026-04-01.png","action":"resolve"}
+{"resolution_mode":"direct","standalone_query":"Explain and summarize the uploaded document Screenshot 2026-04-01.png, including what it is and what it is used for.","confidence":0.95,"active_subject":"Screenshot 2026-04-01.png","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":["this"],"clarification_question":null,"focus_type":"document","focus_id":"Screenshot 2026-04-01.png","focus_label":"Screenshot 2026-04-01.png","action":"retrieve","interaction_type":"document_request"}
 
 Example 3:
 Working set:
 - Offer_Letter.pdf [processing]
 Latest query: Explain the uploaded file in this conversation.
 Output:
-{"resolution_mode":"direct","standalone_query":"","confidence":0.99,"active_subject":"Offer_Letter.pdf","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"document","focus_id":"Offer_Letter.pdf","focus_label":"Offer_Letter.pdf","action":"status_only"}
+{"resolution_mode":"direct","standalone_query":"","confidence":0.99,"active_subject":"Offer_Letter.pdf","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"document","focus_id":"Offer_Letter.pdf","focus_label":"Offer_Letter.pdf","action":"status_only","interaction_type":"document_request"}
 
 Example 4:
 Conversation:
@@ -103,7 +205,30 @@ Conversation:
 - Assistant: I summarized annual leave only.
 Latest query: What about that?
 Output:
-{"resolution_mode":"clarify","standalone_query":"","confidence":0.22,"active_subject":"Annual leave","latest_topic_reference":null,"recent_answer_summary":"I summarized annual leave only.","unresolved_references":["that"],"clarification_question":"Do you want annual leave, sick leave, or another leave policy?","focus_type":"none","focus_id":null,"focus_label":null,"action":"clarify"}"""
+{"resolution_mode":"clarify","standalone_query":"","confidence":0.22,"active_subject":"Annual leave","latest_topic_reference":null,"recent_answer_summary":"I summarized annual leave only.","unresolved_references":["that"],"clarification_question":"Do you want annual leave, sick leave, or another leave policy?","focus_type":"none","focus_id":null,"focus_label":null,"action":"clarify","interaction_type":"clarify"}
+
+Example 5:
+Working set:
+- Offer_Letter.pdf [ready]
+- Medical_Benefits.pdf [ready]
+Latest query: Explain this uploaded document.
+Output:
+{"resolution_mode":"clarify","standalone_query":"","confidence":0.24,"active_subject":null,"latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":["this"],"clarification_question":"I found multiple uploaded documents in this conversation: Offer_Letter.pdf and Medical_Benefits.pdf. Which one should I explain?","focus_type":"none","focus_id":null,"focus_label":null,"action":"clarify","interaction_type":"clarify"}
+
+Example 6:
+Latest query: hello
+Output:
+{"resolution_mode":"direct","standalone_query":"hello","confidence":0.97,"active_subject":"HR copilot","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"none","focus_id":null,"focus_label":null,"action":"direct_response","interaction_type":"greeting","assistant_response_style":"greeting_warm"}
+
+Example 7:
+Latest query: ok tell me what you can overall do
+Output:
+{"resolution_mode":"direct","standalone_query":"ok tell me what you can overall do","confidence":0.95,"active_subject":"HR copilot","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"none","focus_id":null,"focus_label":null,"action":"direct_response","interaction_type":"capability","assistant_response_style":"capability_overview"}
+
+Example 8:
+Latest query: that's good
+Output:
+{"resolution_mode":"direct","standalone_query":"that's good","confidence":0.93,"active_subject":"HR copilot","latest_topic_reference":null,"recent_answer_summary":null,"unresolved_references":[],"clarification_question":null,"focus_type":"none","focus_id":null,"focus_label":null,"action":"direct_response","interaction_type":"acknowledgement","assistant_response_style":"acknowledgement_positive"}"""
 
 HR_ABBREVIATIONS = {
     "wfh": "Work From Home",
@@ -133,7 +258,9 @@ class _ResolutionPayload(BaseModel):
     focus_type: Literal["topic", "policy", "document", "none"] = "none"
     focus_id: str | None = None
     focus_label: str | None = None
-    action: Literal["resolve", "clarify", "status_only"] = "resolve"
+    action: Literal["direct_response", "retrieve", "clarify", "status_only", "resolve"] = "retrieve"
+    interaction_type: InteractionType | None = None
+    assistant_response_style: AssistantResponseStyle | None = None
 
 
 @dataclass
@@ -151,8 +278,11 @@ class ConversationContextResolution:
     focus_type: Literal["topic", "policy", "document", "none"] = "none"
     focus_id: str | None = None
     focus_label: str | None = None
-    action: Literal["resolve", "clarify", "status_only"] = "resolve"
+    action: Literal["direct_response", "retrieve", "clarify", "status_only"] = "retrieve"
     focus_source: str | None = None
+    interaction_type: InteractionType = "knowledge_request"
+    assistant_response_style: AssistantResponseStyle | None = None
+    assistant_response: str | None = None
 
     @property
     def clarification_needed(self) -> bool:
@@ -181,6 +311,8 @@ def serialize_context_resolution(
         "focus_label": resolution.focus_label,
         "action": resolution.action,
         "focus_source": resolution.focus_source,
+        "interaction_type": resolution.interaction_type,
+        "assistant_response_style": resolution.assistant_response_style,
     }
 
 
@@ -206,6 +338,118 @@ def _expand_abbreviations(query: str) -> str:
 def _collect_unresolved_references(query: str) -> list[str]:
     lowered = (query or "").lower()
     return [marker for marker in REFERENCE_MARKERS if marker in lowered]
+
+
+def _normalize_interaction_text(value: str) -> str:
+    cleaned = re.sub(r"[^\w\s]+", " ", (value or "").lower())
+    return _normalize_query(cleaned)
+
+
+def _is_capability_query(value: str) -> bool:
+    normalized = _normalize_interaction_text(value)
+    return any(
+        normalized == pattern or normalized.startswith(f"{pattern} ")
+        for pattern in CAPABILITY_PATTERNS
+    )
+
+
+def _is_greeting_like(value: str) -> bool:
+    normalized = _normalize_interaction_text(value)
+    return normalized in {_normalize_interaction_text(item) for item in GREETING_PHRASES}
+
+
+def _is_acknowledgement_like(value: str) -> bool:
+    normalized = _normalize_interaction_text(value)
+    return normalized in {_normalize_interaction_text(item) for item in ACKNOWLEDGEMENT_PHRASES}
+
+
+def _is_closing_like(value: str) -> bool:
+    normalized = _normalize_interaction_text(value)
+    return normalized in {_normalize_interaction_text(item) for item in CLOSING_PHRASES}
+
+
+def _strip_leading_conversational_prefixes(query: str) -> str:
+    cleaned = _normalize_query(query)
+    prefixes = sorted(
+        GREETING_PHRASES + ACKNOWLEDGEMENT_PHRASES + CLOSING_PHRASES,
+        key=len,
+        reverse=True,
+    )
+    changed = True
+    while cleaned and changed:
+        changed = False
+        for phrase in prefixes:
+            match = re.match(
+                rf"^\s*{re.escape(phrase)}(?=$|[\s,!.:;?-])",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
+            if not match:
+                continue
+            remainder = cleaned[match.end() :].lstrip(" ,.!?:;-")
+            cleaned = _normalize_query(remainder)
+            changed = True
+            break
+    return cleaned
+
+
+def _default_interaction_type(
+    *,
+    focus_type: Literal["topic", "policy", "document", "none"],
+    action: Literal["direct_response", "retrieve", "clarify", "status_only"],
+) -> InteractionType:
+    if action == "clarify":
+        return "clarify"
+    if focus_type == "document":
+        return "document_request"
+    return "knowledge_request"
+
+
+def _interaction_type_from_style(
+    style: AssistantResponseStyle | None,
+) -> InteractionType | None:
+    if style == "greeting_warm":
+        return "greeting"
+    if style == "capability_overview":
+        return "capability"
+    if style == "acknowledgement_positive":
+        return "acknowledgement"
+    if style == "closing_helpful":
+        return "closing"
+    return None
+
+
+def _assistant_response_style_for_fallback(query: str) -> tuple[InteractionType, AssistantResponseStyle] | None:
+    normalized = _normalize_interaction_text(query)
+    if not normalized:
+        return None
+    if _is_capability_query(normalized):
+        return ("capability", "capability_overview")
+    if _is_closing_like(normalized):
+        return ("closing", "closing_helpful")
+    if _is_acknowledgement_like(normalized):
+        return ("acknowledgement", "acknowledgement_positive")
+    if _is_greeting_like(normalized):
+        return ("greeting", "greeting_warm")
+    return None
+
+
+def _fallback_direct_resolution(query: str) -> ConversationContextResolution | None:
+    direct = _assistant_response_style_for_fallback(query)
+    if not direct:
+        return None
+    interaction_type, response_style = direct
+    return ConversationContextResolution(
+        resolution_mode="direct",
+        standalone_query=_normalize_query(query),
+        confidence=1.0,
+        active_subject="HR copilot",
+        source="fallback",
+        focus_type="none",
+        action="direct_response",
+        interaction_type=interaction_type,
+        assistant_response_style=response_style,
+    )
 
 
 def _normalize_working_set(working_set: Any | None) -> dict[str, Any]:
@@ -551,8 +795,9 @@ Resolve the latest user query into one of:
 - clarify
 
 You must also decide:
+- interaction_type: knowledge_request | capability | greeting | acknowledgement | closing | document_request | clarify
 - focus_type: topic | policy | document | none
-- action: resolve | clarify | status_only
+- action: direct_response | retrieve | clarify | status_only
 
 Use this domain as the default context:
 - Name: {settings.context_resolution_domain_name}
@@ -560,16 +805,18 @@ Use this domain as the default context:
 
 Rules:
 1. Output one JSON object only.
-2. Do not answer the user's question.
-3. Use "direct" when the query already stands alone.
-4. Use "resolved_follow_up" when prior turns or the working set clearly identify the subject.
-5. Use "clarify" only when ambiguity remains unsafe after considering the working set.
-6. When the user refers to an uploaded document and there is one clear session-document candidate, resolve it instead of asking a generic clarification.
-7. When multiple session documents exist and the user makes a generic uploaded-document reference, prefer the latest ready document unless the query clearly points to another file.
-8. Use "status_only" when the relevant uploaded document exists but is still processing, needs review, or failed parsing.
-9. Never invent policy names, document titles, or facts not supported by the conversation or working set.
-10. Make standalone_query concise, retrieval-ready, and self-contained.
-11. Confidence must be between 0 and 1.
+2. Do not answer the user's HR question. You are only routing the turn.
+3. Use "direct_response" for greeting, acknowledgement, closing, or capability-only turns. These should skip retrieval.
+4. Use "retrieve" for real HR knowledge requests, including mixed conversational turns like "hi, explain sick leave".
+5. Use "resolved_follow_up" when prior turns or the working set clearly identify the subject.
+6. Use "clarify" only when ambiguity remains unsafe after considering the working set.
+7. When the user refers to an uploaded document and there is one clear session-document candidate, resolve it instead of asking a generic clarification.
+8. When multiple ready session documents exist and the user makes a generic uploaded-document reference, clarify with the actual document names instead of guessing.
+9. Use "status_only" when the relevant uploaded document exists but is still processing, needs review, or failed parsing.
+10. Never invent policy names, document titles, or facts not supported by the conversation or working set.
+11. Make standalone_query concise, retrieval-ready, and self-contained when action is "retrieve".
+12. For direct_response turns, choose assistant_response_style from: greeting_warm | capability_overview | acknowledgement_positive | closing_helpful.
+13. Confidence must be between 0 and 1 and should reflect trust in the routing decision, not truth of the final answer.
 
 Required JSON shape:
 {{
@@ -584,7 +831,9 @@ Required JSON shape:
   "focus_type": "topic | policy | document | none",
   "focus_id": "string | null",
   "focus_label": "string | null",
-  "action": "resolve | clarify | status_only"
+  "action": "direct_response | retrieve | clarify | status_only",
+  "interaction_type": "knowledge_request | capability | greeting | acknowledgement | closing | document_request | clarify",
+  "assistant_response_style": "greeting_warm | capability_overview | acknowledgement_positive | closing_helpful | null"
 }}
 
 Examples:
@@ -673,6 +922,19 @@ def _coerce_resolution_payload(
     focus_type = payload.focus_type
     focus_id = _normalize_optional_text(payload.focus_id, limit=160)
     focus_label = _normalize_optional_text(payload.focus_label, limit=160)
+    interaction_type = payload.interaction_type
+    assistant_response_style = payload.assistant_response_style
+    if not interaction_type:
+        interaction_type = _interaction_type_from_style(assistant_response_style)
+
+    if action == "resolve":
+        action = "retrieve"
+    if action == "direct_response" and (not interaction_type or not assistant_response_style):
+        fallback_direct = _assistant_response_style_for_fallback(expanded_query)
+        if fallback_direct:
+            fallback_interaction, fallback_style = fallback_direct
+            interaction_type = interaction_type or fallback_interaction
+            assistant_response_style = assistant_response_style or fallback_style
 
     if focus_type == "none":
         focus_type = _default_focus_type(active_subject, latest_topic_reference)
@@ -687,6 +949,12 @@ def _coerce_resolution_payload(
             )
     elif action == "status_only":
         standalone_query = ""
+    elif action == "direct_response":
+        resolution_mode = "direct"
+        if not active_subject:
+            active_subject = "HR copilot"
+        if focus_type == "none":
+            focus_label = None
     elif not standalone_query:
         resolution_mode = "direct"
         standalone_query = expanded_query
@@ -696,6 +964,7 @@ def _coerce_resolution_payload(
         and confidence < settings.context_resolution_confidence_threshold
         and (unresolved_references or not active_subject)
         and focus_type != "document"
+        and action == "retrieve"
     ):
         resolution_mode = "clarify"
         action = "clarify"
@@ -719,6 +988,9 @@ def _coerce_resolution_payload(
         focus_id=focus_id,
         focus_label=focus_label,
         action=action,
+        interaction_type=interaction_type
+        or _default_interaction_type(focus_type=focus_type, action=action),
+        assistant_response_style=assistant_response_style,
     )
 
 
@@ -758,6 +1030,27 @@ def _build_fallback_standalone_query(query: str, active_subject: str | None) -> 
     if active_subject.lower() in normalized_query.lower():
         return normalized_query
     return _normalize_query(f"{active_subject}: {normalized_query}")
+
+
+def _document_clarification_question(documents: list[dict[str, Any]]) -> str:
+    labels = [_document_label(document) or "Uploaded document" for document in documents[:3]]
+    if not labels:
+        return (
+            "I found multiple uploaded documents in this conversation. "
+            "Which one should I explain?"
+        )
+    if len(labels) == 1:
+        return f"Do you want me to explain {labels[0]}?"
+    if len(labels) == 2:
+        return (
+            f"I found multiple uploaded documents in this conversation: {labels[0]} and {labels[1]}. "
+            "Which one should I explain?"
+        )
+    leading = ", ".join(labels[:-1])
+    return (
+        f"I found multiple uploaded documents in this conversation: {leading}, and {labels[-1]}. "
+        "Which one should I explain?"
+    )
 
 
 def _match_document_by_query(
@@ -829,6 +1122,7 @@ def _document_resolution(
     if not should_consider_document:
         return None
 
+    ready_documents = _ready_documents(working_set)
     selected = None
     resolution_source = "conversation_memory"
     if explicit_match:
@@ -842,25 +1136,38 @@ def _document_resolution(
     elif last_focused_document and context_dependent:
         selected = last_focused_document
         resolution_source = "conversation_memory"
+    elif len(ready_documents) == 1:
+        selected = ready_documents[0]
+        resolution_source = "latest_upload"
+    elif len(ready_documents) > 1:
+        return ConversationContextResolution(
+            resolution_mode="clarify",
+            standalone_query="",
+            confidence=0.24,
+            active_subject=None,
+            latest_topic_reference=None,
+            recent_answer_summary=_latest_recent_summary(recent_messages),
+            unresolved_references=unresolved_references,
+            clarification_question=_document_clarification_question(ready_documents),
+            source="fallback",
+            focus_type="none",
+            action="clarify",
+            interaction_type="clarify",
+        )
     else:
-        latest_ready_document = _latest_ready_document(working_set)
-        if latest_ready_document:
-            selected = latest_ready_document
-            resolution_source = "latest_upload"
-        else:
-            selected = _latest_uploaded_document(working_set)
-            resolution_source = "latest_upload"
+        selected = _latest_uploaded_document(working_set)
+        resolution_source = "latest_upload"
 
     label = _document_label(selected) if selected else "uploaded document"
     document_id = selected.get("document_id") if selected else None
     status = selected.get("status") if selected else None
-    action: Literal["resolve", "clarify", "status_only"] = (
-        "resolve" if status == "ready" else "status_only"
+    action: Literal["retrieve", "clarify", "status_only"] = (
+        "retrieve" if status == "ready" else "status_only"
     )
 
     return ConversationContextResolution(
         resolution_mode="resolved_follow_up" if context_dependent else "direct",
-        standalone_query=_build_document_standalone_query(normalized_query, label) if action == "resolve" else "",
+        standalone_query=_build_document_standalone_query(normalized_query, label) if action == "retrieve" else "",
         confidence=0.99 if action == "status_only" else 0.92,
         active_subject=label,
         latest_topic_reference=None,
@@ -873,6 +1180,7 @@ def _document_resolution(
         focus_label=label,
         action=action,
         focus_source=resolution_source,
+        interaction_type="document_request",
     )
 
 
@@ -898,6 +1206,11 @@ def _finalize_resolution(
     if resolution.action == "clarify":
         resolution.resolution_mode = "clarify"
         resolution.standalone_query = ""
+        resolution.interaction_type = "clarify"
+    elif resolution.focus_type == "document":
+        if resolution.action == "direct_response":
+            resolution.action = "retrieve"
+        resolution.interaction_type = "document_request"
 
     return resolution
 
@@ -931,6 +1244,16 @@ def _fallback_resolution(
     recent_answer_summary = _latest_recent_summary(recent_messages)
     needs_clarification = _looks_context_dependent(expanded_query, unresolved_references) and not active_subject
 
+    direct_resolution = _fallback_direct_resolution(expanded_query)
+    if direct_resolution:
+        direct_resolution.context_window = _build_context_window(
+            direct_resolution,
+            _collect_recent_documents(recent_messages, working_set),
+            session_scope_active=session_scope_active,
+            working_set=working_set,
+        )
+        return direct_resolution
+
     if needs_clarification:
         resolution = ConversationContextResolution(
             resolution_mode="clarify",
@@ -947,6 +1270,7 @@ def _fallback_resolution(
             source="fallback",
             focus_type="none",
             action="clarify",
+            interaction_type="clarify",
         )
     else:
         resolution_mode: Literal["direct", "resolved_follow_up", "clarify"] = (
@@ -965,7 +1289,11 @@ def _fallback_resolution(
             source="fallback",
             focus_type=focus_type,
             focus_label=active_subject or latest_topic_reference,
-            action="resolve",
+            action="retrieve",
+            interaction_type=_default_interaction_type(
+                focus_type=focus_type,
+                action="retrieve",
+            ),
         )
 
     resolution.context_window = _build_context_window(
@@ -1142,6 +1470,7 @@ def build_turn_context(
         "focus_type": context_resolution.focus_type if context_resolution else "none",
         "focus_id": context_resolution.focus_id if context_resolution else None,
         "focus_label": context_resolution.focus_label if context_resolution else None,
+        "interaction_type": context_resolution.interaction_type if context_resolution else "knowledge_request",
     }
 
 
