@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from shared.document_core.models import NormalizedDocument
+from shared.document_core.policy_metadata import infer_policy_metadata
 
 
 def extract_frontmatter(markdown_text: str) -> dict[str, str]:
@@ -58,6 +59,15 @@ def build_document_metadata(
         "section_headings": headings[:100],
         "heading_count": len(headings),
     }
+
+    metadata.update(
+        infer_policy_metadata(
+            markdown_text=markdown_text,
+            filename=filename,
+            frontmatter=frontmatter,
+            headings=headings,
+        )
+    )
 
     if normalized_document is not None:
         metadata.update(

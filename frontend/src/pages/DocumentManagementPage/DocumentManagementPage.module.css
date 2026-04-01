@@ -1,13 +1,17 @@
 .page {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   background:
     radial-gradient(circle at top, rgba(16, 185, 129, 0.08), transparent 38%),
     var(--app-background);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .container {
   padding-top: 32px;
   padding-bottom: 32px;
+  min-width: 0;
 }
 
 .hero,
@@ -17,6 +21,8 @@
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   box-shadow: var(--app-shadow-md);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .hero {
@@ -69,6 +75,17 @@
   color: var(--app-accent-primary);
 }
 
+.metricRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metricStatus {
+  flex-shrink: 0;
+}
+
 .uploadPanel {
   padding: 22px;
   align-self: start;
@@ -77,14 +94,108 @@
 .libraryPanel {
   padding: 22px;
   grid-column: span 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: min(72vh, 760px);
+}
+
+.libraryPanelBody {
+  min-height: 0;
+  flex: 1;
+}
+
+.libraryListViewport {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .sectionTitle {
   color: var(--app-text-primary);
+  line-height: 1.1;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sectionHeaderCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.sectionHeaderStatus {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.scopeControl {
+  align-self: flex-start;
+  background: var(--app-surface-hover);
+  border: 1px solid var(--app-border);
+  padding: 4px;
+}
+
+.scopeControlIndicator {
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+}
+
+.scopeControlLabel {
+  color: var(--app-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.scopeControlLabel[data-active="true"] {
+  color: var(--app-text-primary);
+}
+
+.spinningStatus {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 1200px) {
   .libraryPanel {
     grid-column: span 1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-top: 20px;
+    padding-bottom: 24px;
+  }
+
+  .hero,
+  .statCard,
+  .uploadPanel,
+  .libraryPanel {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .sectionHeader {
+    gap: 12px;
+  }
+
+  .scopeControl {
+    width: 100%;
   }
 }

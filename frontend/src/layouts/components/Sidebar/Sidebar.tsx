@@ -24,7 +24,6 @@ import UserMenu from "@/layouts/components/UserMenu/UserMenu";
 import { useLayout } from "@/layouts/LayoutContext";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  setActiveConversation,
   deleteConversation,
   startNewChat,
 } from "@/store/slices/chatSlice";
@@ -235,7 +234,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                               isActive ? classes.conversationButtonActive : ""
                             }`}
                             onClick={() => {
-                              dispatch(setActiveConversation(c.id));
                               navigate(`/copilot/c/${c.id}`);
                               if (isMobile) toggleMobile();
                             }}

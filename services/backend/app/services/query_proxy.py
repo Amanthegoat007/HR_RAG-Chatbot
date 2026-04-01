@@ -4,11 +4,12 @@ import json
 import re
 from typing import Any, AsyncGenerator
 
+import asyncpg
 from fastapi import HTTPException
 
 from app.config import settings
 from app.services.response_formatter import normalize_markdown_answer
-from app.services.assistant_response_builder import build_assistant_message_metadata
+from app.services.assistant_enrichment import build_enriched_assistant_message_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ async def stream_rag_pipeline(
     message: str,
     conversation_history: list,
     conversation_id: str,
+    db_pool: asyncpg.Pool | None = None,
     language: str = "en",
     user_role: str = "employee",
     reasoning_mode: str | None = None,
@@ -137,11 +139,13 @@ async def stream_rag_pipeline(
 
     # Yield the collected text as a special internal event
     full_text = _coerce_visible_answer_text("".join(collected_tokens))
-    message_metadata = build_assistant_message_metadata(
+    message_metadata = await build_enriched_assistant_message_metadata(
         question=message,
         answer_text=full_text,
         sources=latest_sources,
         upstream_meta=done_meta,
+        user_role=user_role,
+        db_pool=db_pool,
     )
     yield f"data: {json.dumps({'type': 'done', 'fullText': full_text, 'responsePayload': message_metadata.get('responsePayload'), 'metadata': message_metadata, 'meta': done_meta})}\n\n"
 
@@ -151,6 +155,7 @@ async def query_rag_pipeline(
     message: str,
     conversation_history: list,
     conversation_id: str,
+    db_pool: asyncpg.Pool | None = None,
     language: str = "en",
     user_role: str = "employee",
     reasoning_mode: str | None = None,
@@ -230,11 +235,13 @@ async def query_rag_pipeline(
         raise HTTPException(status_code=500, detail="An internal error occurred. Please try again.")
 
     full_text = _coerce_visible_answer_text(assistant_message)
-    metadata = build_assistant_message_metadata(
+    metadata = await build_enriched_assistant_message_metadata(
         question=message,
         answer_text=full_text,
         sources=latest_sources,
         upstream_meta=done_meta,
+        user_role=user_role,
+        db_pool=db_pool,
     )
     return {
         "fullText": full_text,

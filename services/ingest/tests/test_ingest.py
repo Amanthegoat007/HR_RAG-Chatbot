@@ -133,3 +133,44 @@ class TestMetadataExtractor:
         md = "# Chapter 1\n\nContent\n\n## Section 1.1\n\nMore content\n\n### Subsection"
         headings = extract_section_headings(md)
         assert headings == ["Chapter 1", "Section 1.1", "Subsection"]
+
+
+class TestSupportedFormats:
+    """Regression tests for formats the ingest API advertises and accepts."""
+
+    def test_image_formats_are_supported_by_ingest_api(self):
+        from app.main import SUPPORTED_EXTENSIONS, SUPPORTED_MIME_TYPES
+
+        assert "png" in SUPPORTED_EXTENSIONS
+        assert "jpg" in SUPPORTED_EXTENSIONS
+        assert "jpeg" in SUPPORTED_EXTENSIONS
+        assert "webp" in SUPPORTED_EXTENSIONS
+        assert SUPPORTED_MIME_TYPES["image/png"] == "png"
+        assert SUPPORTED_MIME_TYPES["image/jpeg"] == "jpeg"
+        assert SUPPORTED_MIME_TYPES["image/webp"] == "webp"
+
+
+class TestImageOcrSelection:
+    """Unit tests for OCR candidate selection heuristics."""
+
+    def test_select_best_ocr_candidate_prefers_cleaner_markdown(self):
+        from app.file_converter import _select_best_ocr_candidate
+
+        noisy = (
+            "---\nfilename: bill.png\nformat: png\npage_count: 1\n---\n\n"
+            "valve Fe GTB\narmor\nblsttoment-sonuny2008\n"
+        )
+        clean = (
+            "---\nfilename: bill.png\nformat: png\npage_count: 1\n---\n\n"
+            "UtilityPro Account RES-45678\n"
+            "Customer: Jane Doe\n"
+            "Amount Due: $1,250.75\n"
+            "Due Date: February 5, 2026\n"
+        )
+
+        label, markdown, _score = _select_best_ocr_candidate(
+            [("raw", noisy), ("enhanced", clean)],
+        )
+
+        assert label == "enhanced"
+        assert "Amount Due" in markdown

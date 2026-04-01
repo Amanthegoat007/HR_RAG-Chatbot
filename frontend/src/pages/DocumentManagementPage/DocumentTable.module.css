@@ -1,5 +1,11 @@
+.scrollArea {
+  height: 100%;
+}
+
 .table {
   background: transparent;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .table thead th {
@@ -8,6 +14,31 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom-color: var(--app-border);
+}
+
+.table thead th:first-child {
+  width: 50%;
+}
+
+.table thead th:nth-child(2) {
+  width: 14%;
+}
+
+.table thead th:nth-child(3) {
+  width: 11%;
+}
+
+.table thead th:nth-child(4) {
+  width: 13%;
+}
+
+.table thead th:nth-child(5) {
+  width: 12%;
+}
+
+.table th,
+.table td {
+  vertical-align: top;
 }
 
 .row td {
@@ -24,11 +55,20 @@
 
 .filename {
   color: var(--app-text-primary);
+  display: block;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .fileSubtext,
 .cellMuted {
   color: var(--app-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.uploadedCell {
+  white-space: nowrap;
 }
 
 .emptyState {
@@ -50,4 +90,10 @@
 .emptyCopy {
   color: var(--app-text-secondary);
   max-width: 420px;
+}
+
+@media (max-width: 1024px) {
+  .table {
+    min-width: 760px;
+  }
 }

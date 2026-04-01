@@ -18,6 +18,18 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _normalize_json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
 async def create_db_pool() -> asyncpg.Pool:
     return await asyncpg.create_pool(
         dsn=settings.postgres_dsn,
@@ -91,7 +103,12 @@ async def fetch_messages(pool: asyncpg.Pool, conv_id: str) -> List[Dict[str, Any
             """,
             conv_id
         )
-    return [dict(r) for r in rows]
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        payload = dict(row)
+        payload["metadata"] = _normalize_json_object(payload.get("metadata"))
+        normalized_rows.append(payload)
+    return normalized_rows
 
 async def create_message(
     pool: asyncpg.Pool,
@@ -214,12 +231,29 @@ async def get_document(pool: asyncpg.Pool, document_id: str) -> Optional[dict[st
         row = await conn.fetchrow("SELECT * FROM documents WHERE id = $1::uuid", document_id)
     return dict(row) if row else None
 
+
+async def get_documents_by_ids(
+    pool: asyncpg.Pool,
+    document_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    unique_ids = list(dict.fromkeys(doc_id for doc_id in document_ids if doc_id))
+    if not unique_ids:
+        return {}
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM documents WHERE id = ANY($1::uuid[])",
+            unique_ids,
+        )
+    return {str(row["id"]): dict(row) for row in rows}
+
 async def list_documents(
     pool: asyncpg.Pool,
     limit: int = 100,
     offset: int = 0,
     status_filter: Optional[str] = None,
     scope: Optional[str] = None,
+    session_owner_user_id: Optional[str] = None,
 ) -> tuple[list[dict[str, Any]], int]:
     filters: list[str] = []
     params: list[Any] = []
@@ -232,6 +266,21 @@ async def list_documents(
         filters.append(
             "(metadata->>'scope' = 'session' OR metadata ? 'session_id' OR metadata ? 'conversation_id')"
         )
+        if session_owner_user_id:
+            params.append(session_owner_user_id)
+            filters.append(
+                f"""
+                EXISTS (
+                    SELECT 1
+                    FROM conversations c
+                    WHERE c.id::text = COALESCE(
+                        NULLIF(documents.metadata->>'conversation_id', ''),
+                        NULLIF(documents.metadata->>'session_id', '')
+                    )
+                      AND c.user_id = ${len(params)}
+                )
+                """
+            )
     elif scope == "library":
         filters.append(
             "(metadata->>'scope' IS NULL OR metadata->>'scope' = 'library') AND NOT (metadata ? 'session_id') AND NOT (metadata ? 'conversation_id')"

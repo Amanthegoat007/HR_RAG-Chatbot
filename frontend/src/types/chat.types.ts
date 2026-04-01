@@ -96,6 +96,26 @@ export interface MessageMetadata {
     clarificationQuestion?: string;
     source?: "llm" | "cache" | "fallback";
   };
+  trustSummary?: {
+    policyTitle?: string;
+    policyFamily?: string;
+    policyVersion?: string;
+    effectiveDate?: string;
+    effectiveDateLabel?: string;
+    owner?: string;
+    jurisdiction?: string;
+    freshnessLabel?: string;
+    freshnessTone?: "fresh" | "recent" | "stale";
+    groundingLabel?: string;
+    groundingScore?: number;
+    hasConflict?: boolean;
+    conflictLabel?: string;
+    sourceCount?: number;
+  };
+  relatedSuggestions?: Array<{
+    label: string;
+    prompt: string;
+  }>;
 }
 
 export interface Message {

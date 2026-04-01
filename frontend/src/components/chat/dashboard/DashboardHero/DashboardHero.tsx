@@ -1,5 +1,6 @@
 import { Box, Container, Stack, Text, Title } from "@mantine/core";
 import { useAppSelector } from "@/store/hooks";
+import { useGreetingClock } from "@/hooks/useGreetingClock";
 import { buildGreetingCopy } from "@/utils/greetingPhraseEngine";
 import { buildIdentityPresentation } from "@/utils/identityPresentation";
 import styles from "./DashboardHero.module.css";
@@ -13,8 +14,9 @@ export default function DashboardHero({
 }: DashboardHeroProps) {
   const isLanding = variant === "landing";
   const user = useAppSelector((s) => s.auth.user);
+  const now = useGreetingClock();
   const identity = buildIdentityPresentation(user);
-  const greetingCopy = buildGreetingCopy(identity);
+  const greetingCopy = buildGreetingCopy(identity, now);
 
   if (isLanding) {
     return (
@@ -34,12 +36,6 @@ export default function DashboardHero({
             <Title order={1} className={styles.landingHeading}>
               {greetingCopy.headline}
             </Title>
-            <Box className={styles.identityPill}>
-              <span className={styles.identityInitials}>{identity.initials}</span>
-              <span className={styles.identityName}>{identity.displayName}</span>
-              <span className={styles.identityDivider} />
-              <span className={styles.identityRole}>{identity.roleLabel}</span>
-            </Box>
             <Text className={styles.promptLine} ta="center">
               {greetingCopy.prompt}
             </Text>
@@ -76,12 +72,6 @@ export default function DashboardHero({
           <Title order={2} className={`${styles.heroTitle} ${styles.heroTitleAccent}`}>
             {greetingCopy.prompt}
           </Title>
-          <Box className={styles.identityPill}>
-            <span className={styles.identityInitials}>{identity.initials}</span>
-            <span className={styles.identityName}>{identity.displayName}</span>
-            <span className={styles.identityDivider} />
-            <span className={styles.identityRole}>{identity.roleLabel}</span>
-          </Box>
           <Text
             c="dimmed"
             size="md"

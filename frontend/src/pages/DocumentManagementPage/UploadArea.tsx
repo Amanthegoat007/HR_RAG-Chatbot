@@ -9,6 +9,8 @@ interface UploadAreaProps {
   loading?: boolean;
 }
 
+const FLOW_STEPS = ["Upload", "Processing", "Ready"];
+
 export function UploadArea({ onDrop, loading }: UploadAreaProps) {
   return (
     <Dropzone
@@ -28,7 +30,7 @@ export function UploadArea({ onDrop, loading }: UploadAreaProps) {
       loading={loading}
       className={classes.dropzone}
     >
-      <Group justify="space-between" align="stretch" className={classes.inner}>
+      <Stack gap="lg" className={classes.inner}>
         <Group gap="md" wrap="nowrap" className={classes.copyGroup}>
           <div className={classes.iconShell}>
             <Dropzone.Accept>
@@ -41,7 +43,7 @@ export function UploadArea({ onDrop, loading }: UploadAreaProps) {
               <TbUpload size={26} />
             </Dropzone.Idle>
           </div>
-          <Stack gap={4}>
+          <Stack gap={6} className={classes.copyBlock}>
             <Text fw={600} className={classes.title}>
               Drag documents here or browse to upload
             </Text>
@@ -52,15 +54,19 @@ export function UploadArea({ onDrop, loading }: UploadAreaProps) {
           </Stack>
         </Group>
 
-        <Stack gap={4} className={classes.meta}>
-          <Text size="xs" className={classes.metaLabel}>
+        <div className={classes.metaSection}>
+          <Text size="xs" fw={600} className={classes.metaLabel}>
             Intake flow
           </Text>
-          <Text size="sm" className={classes.metaValue}>
-            Uploading → Processing → Ready
-          </Text>
-        </Stack>
-      </Group>
+          <div className={classes.metaSteps}>
+            {FLOW_STEPS.map((step) => (
+              <span key={step} className={classes.metaStep}>
+                {step}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Stack>
     </Dropzone>
   );
 }

@@ -308,9 +308,17 @@ async def list_all_documents(
     payload: dict = Depends(require_auth),
 ):
     db_pool: asyncpg.Pool = request.app.state.db_pool
-    if scope == "library" and not _is_admin(payload):
+    is_admin = _is_admin(payload)
+    if scope == "library" and not is_admin:
         raise HTTPException(status_code=403, detail="Admin privileges required")
-    rows, total = await db.list_documents(db_pool, limit, offset, status_filter, scope=scope)
+    rows, total = await db.list_documents(
+        db_pool,
+        limit,
+        offset,
+        status_filter,
+        scope=scope,
+        session_owner_user_id=None if is_admin or scope != "session" else payload.get("sub"),
+    )
     return DocumentListResponse(documents=[_serialize_document(row) for row in rows], total=total)
 
 
@@ -347,6 +355,16 @@ async def delete_session_files(
 ):
     ip_address = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown").split(",")[0].strip()
     db_pool: asyncpg.Pool = request.app.state.db_pool
+
+    if not _is_admin(payload):
+        async with db_pool.acquire() as conn:
+            owns_conversation = await conn.fetchval(
+                "SELECT 1 FROM conversations WHERE id = $1::uuid AND user_id = $2",
+                session_id,
+                payload.get("sub"),
+            )
+        if not owns_conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
 
     # Find all documents with this session_id
     async with db_pool.acquire() as conn:

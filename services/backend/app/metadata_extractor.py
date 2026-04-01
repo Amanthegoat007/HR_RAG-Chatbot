@@ -11,6 +11,8 @@ DEPENDENCIES: re (stdlib)
 import re
 from typing import Any
 
+from app.services.policy_metadata import infer_policy_metadata
+
 
 def extract_frontmatter(markdown_text: str) -> dict[str, str]:
     """
@@ -99,6 +101,12 @@ def build_document_metadata(
         "file_size_bytes": file_size_bytes,
         "section_headings": headings[:50],  # Cap at 50 headings for JSONB size
         "heading_count": len(headings),
+        **infer_policy_metadata(
+            markdown_text=markdown_text,
+            filename=filename,
+            frontmatter=frontmatter,
+            headings=headings,
+        ),
     }
 
 

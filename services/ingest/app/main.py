@@ -160,6 +160,22 @@ SUPPORTED_MIME_TYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
     "text/plain": "txt",
     "text/markdown": "md",
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/webp": "webp",
+}
+
+SUPPORTED_EXTENSIONS = {
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "txt",
+    "md",
+    "png",
+    "jpg",
+    "jpeg",
+    "webp",
 }
 
 
@@ -168,7 +184,7 @@ SUPPORTED_MIME_TYPES = {
     response_model=UploadResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Upload a document for ingestion",
-    description="Upload a PDF, DOCX, XLSX, PPTX, TXT, or MD file. Admin only. Returns job ID for status tracking.",
+    description="Upload a PDF, DOCX, XLSX, PPTX, TXT, MD, PNG, JPG, JPEG, or WEBP file. Admin only. Returns job ID for status tracking.",
 )
 async def upload_document(
     request: Request,
@@ -210,13 +226,17 @@ async def upload_document(
             detail=f"File too large. Maximum size: {settings.max_upload_size_mb} MB"
         )
 
-    # Validate file format by extension
+    # Validate file format by extension so OCR image uploads follow the same
+    # canonical path as office/text documents.
     filename = file.filename or "unknown"
     ext = Path(filename).suffix.lower().lstrip(".")
-    if ext not in ("pdf", "docx", "xlsx", "pptx", "txt", "md"):
+    if ext not in SUPPORTED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported format: .{ext}. Supported: pdf, docx, xlsx, pptx, txt, md"
+            detail=(
+                f"Unsupported format: .{ext}. "
+                "Supported: pdf, docx, xlsx, pptx, txt, md, png, jpg, jpeg, webp"
+            ),
         )
 
     document_id = str(uuid.uuid4())

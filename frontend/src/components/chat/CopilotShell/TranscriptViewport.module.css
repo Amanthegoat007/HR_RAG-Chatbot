@@ -16,6 +16,35 @@
   align-items: flex-start;
 }
 
+.loadingState {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.loadingCard {
+  width: min(100%, 420px);
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+  text-align: center;
+}
+
+.loadingTitle {
+  color: var(--app-text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.loadingCopy {
+  color: var(--app-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 34ch;
+}
+
 .conversation {
   min-height: 100%;
   padding-bottom: clamp(12px, 2vh, 24px);

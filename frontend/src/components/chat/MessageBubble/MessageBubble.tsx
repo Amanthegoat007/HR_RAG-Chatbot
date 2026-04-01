@@ -38,6 +38,7 @@ import type { ChartData, TableData, DataViewData } from "@/utils/contentParser";
 import { TbFileDescription as TbSourceIcon } from "react-icons/tb";
 import StructuredAssistantResponse from "./StructuredAssistantResponse";
 import { expandTransition, fadeUpItem } from "@/theme/motion";
+import type { MessageMetadata } from "@/types/chat.types";
 
 import type { MessageBubbleProps } from "./MessageBubble.types";
 import classes from "./MessageBubble.module.css";
@@ -46,6 +47,20 @@ import classes from "./MessageBubble.module.css";
 interface SourceCitation {
   filename: string;
   detail: string; // page/section info
+}
+
+type TrustSummary = NonNullable<MessageMetadata["trustSummary"]>;
+type RelatedSuggestion = NonNullable<MessageMetadata["relatedSuggestions"]>[number];
+
+function dispatchPromptFill(prompt: string) {
+  const trimmedPrompt = prompt.trim();
+  if (!trimmedPrompt) return;
+
+  window.dispatchEvent(
+    new CustomEvent("copilot:starter-prompt", {
+      detail: { prompt: trimmedPrompt },
+    }),
+  );
 }
 
 function hasRenderableStructuredPayload(payload: any): boolean {
@@ -238,9 +253,11 @@ function SourceChip({ citation }: { citation: SourceCitation }) {
 function SourcesPanel({
   citations,
   enrichedSources,
+  trustSummary,
 }: {
   citations: SourceCitation[];
   enrichedSources?: any[];
+  trustSummary?: TrustSummary;
 }) {
   const [showSources, setShowSources] = useState(false);
   // Prefer enriched sources from backend (have chunk text) over citation extraction
@@ -272,6 +289,7 @@ function SourcesPanel({
             transition={expandTransition}
           >
             <div>
+              <SourceTrustRow trustSummary={trustSummary} />
               {hasEnriched
                 ? enrichedSources!.map((src: any, i: number) => (
                     <ExpandableSourceCard key={i} source={src} />
@@ -282,6 +300,81 @@ function SourcesPanel({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function TrustToken({
+  label,
+  tone = "neutral",
+}: {
+  label: string;
+  tone?: "neutral" | "warning";
+}) {
+  return (
+    <span className={classes.trustToken} data-tone={tone}>
+      {label}
+    </span>
+  );
+}
+
+function SourceTrustRow({ trustSummary }: { trustSummary?: TrustSummary }) {
+  if (!trustSummary) return null;
+
+  const trustBits = [
+    trustSummary.policyTitle,
+    trustSummary.policyVersion,
+    trustSummary.effectiveDateLabel
+      ? `Effective ${trustSummary.effectiveDateLabel}`
+      : undefined,
+    trustSummary.owner ? `Owner: ${trustSummary.owner}` : undefined,
+    trustSummary.jurisdiction,
+    trustSummary.freshnessLabel,
+    trustSummary.groundingLabel,
+  ].filter(Boolean) as string[];
+
+  if (trustBits.length === 0 && !trustSummary.hasConflict) {
+    return null;
+  }
+
+  return (
+    <div className={classes.trustRow}>
+      <Text className={classes.trustLabel}>Trust signals</Text>
+      <div className={classes.trustTokens}>
+        {trustBits.map((label) => (
+          <TrustToken key={label} label={label} />
+        ))}
+        {trustSummary.hasConflict && trustSummary.conflictLabel ? (
+          <TrustToken label={trustSummary.conflictLabel} tone="warning" />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function TryNextSuggestions({
+  suggestions,
+}: {
+  suggestions: RelatedSuggestion[];
+}) {
+  if (!suggestions.length) return null;
+
+  return (
+    <Box className={classes.suggestionRail}>
+      <Text className={classes.suggestionRailLabel}>Try next</Text>
+      <div className={classes.suggestionTokens}>
+        {suggestions.map((suggestion) => (
+          <button
+            key={`${suggestion.label}:${suggestion.prompt}`}
+            type="button"
+            className={classes.suggestionToken}
+            onClick={() => dispatchPromptFill(suggestion.prompt)}
+          >
+            <TbCornerDownRight size={13} />
+            <span>{suggestion.label}</span>
+          </button>
+        ))}
+      </div>
+    </Box>
   );
 }
 
@@ -460,6 +553,12 @@ export default function MessageBubble({
     sources && sources.length > 0
       ? sources
       : metadata?.sources || structuredPayload?.sources || [];
+  const relatedSuggestions: RelatedSuggestion[] = metadata?.relatedSuggestions
+    ? metadata.relatedSuggestions
+    : (content.extras?.related || []).map((prompt: string) => ({
+        label: prompt,
+        prompt,
+      }));
 
   const clipboard = useClipboard({ timeout: 2000 });
 
@@ -573,7 +672,11 @@ export default function MessageBubble({
               return (
                 <>
                   <StructuredAssistantResponse payload={structuredPayload} />
-                  <SourcesPanel citations={[]} enrichedSources={effectiveSources} />
+                  <SourcesPanel
+                    citations={[]}
+                    enrichedSources={effectiveSources}
+                    trustSummary={metadata?.trustSummary}
+                  />
                 </>
               );
             }
@@ -704,6 +807,7 @@ export default function MessageBubble({
                   <SourcesPanel
                     citations={citations}
                     enrichedSources={effectiveSources}
+                    trustSummary={metadata?.trustSummary}
                   />
                 )}
               </>
@@ -712,6 +816,8 @@ export default function MessageBubble({
 
           {!isUser && (
             <Box mt="md">
+              <TryNextSuggestions suggestions={relatedSuggestions} />
+
               {/* Action Icons: Download, Copy, Refresh */}
               <Group gap="sm" mb="md">
                 {/* <ActionIcon variant="subtle" color="gray" size="sm">
@@ -769,33 +875,6 @@ export default function MessageBubble({
                 </Tooltip>
               </Group>
 
-              {/* Related Section */}
-              {content.extras?.related && content.extras.related.length > 0 && (
-                <Box>
-                  <Text fw={600} size="md" mb="xs" c="var(--app-text-primary)">
-                    Related
-                  </Text>
-                  <Stack>
-                    {content.extras.related.map((link: string, i: number) => (
-                      <Group key={i} gap="xs" style={{ cursor: "pointer" }}>
-                        <TbCornerDownRight
-                          size={14}
-                          color="var(--app-accent-primary)"
-                        />
-                        <Text
-                          size="md"
-                          c="var(--app-accent-primary)"
-                          style={{
-                            "&:hover": { textDecoration: "underline" },
-                          }}
-                        >
-                          {link}
-                        </Text>
-                      </Group>
-                    ))}
-                  </Stack>
-                </Box>
-              )}
             </Box>
           )}
         </Box>

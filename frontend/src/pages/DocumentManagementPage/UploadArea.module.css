@@ -4,7 +4,8 @@
     linear-gradient(180deg, var(--app-surface), var(--app-surface)),
     var(--app-surface);
   border-radius: 20px;
-  padding: 18px;
+  padding: clamp(18px, 2.4vw, 26px);
+  overflow: hidden;
   transition:
     border-color var(--motion-duration-base) var(--motion-ease-standard),
     transform var(--motion-duration-base) var(--motion-ease-standard),
@@ -17,12 +18,20 @@
 }
 
 .inner {
-  min-height: 120px;
+  min-height: 220px;
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
 }
 
 .copyGroup {
-  flex: 1;
   min-width: 0;
+  align-items: flex-start;
+}
+
+.copyBlock {
+  min-width: 0;
+  flex: 1;
 }
 
 .iconShell {
@@ -39,6 +48,9 @@
 
 .title {
   color: var(--app-text-primary);
+  max-width: 22ch;
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
 .copy,
@@ -46,29 +58,56 @@
   color: var(--app-text-secondary);
 }
 
-.meta {
-  min-width: 180px;
-  padding-left: 12px;
-  border-left: 1px solid var(--app-border);
+.copy {
+  max-width: 38ch;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 
-.metaValue {
+.metaSection {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border);
+}
+
+.metaLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metaSteps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.metaStep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-hover);
   color: var(--app-text-primary);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 @media (max-width: 768px) {
   .inner {
-    flex-direction: column;
-    align-items: flex-start;
+    min-height: 0;
   }
 
-  .meta {
-    min-width: 0;
-    width: 100%;
-    padding-left: 0;
-    border-left: 0;
-    padding-top: 10px;
-    border-top: 1px solid var(--app-border);
+  .dropzone {
+    padding: 18px;
+  }
+
+  .title,
+  .copy {
+    max-width: none;
   }
 }

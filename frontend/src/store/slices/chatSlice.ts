@@ -695,10 +695,17 @@ const chatSlice = createSlice({
       })
       .addCase(fetchMessages.fulfilled, (state, action) => {
         state.isLoadingMessages = false;
-        const convo = state.conversations.find(
+        let convo = state.conversations.find(
           (c) => c.id === action.payload.conversationId,
         );
-        if (!convo) return;
+        if (!convo) {
+          convo = {
+            id: action.payload.conversationId,
+            title: "Loading conversation...",
+            messages: [],
+          };
+          state.conversations.unshift(convo);
+        }
 
         const newMessages: Message[] = action.payload.messages.map((m) => ({
           id: m.id,

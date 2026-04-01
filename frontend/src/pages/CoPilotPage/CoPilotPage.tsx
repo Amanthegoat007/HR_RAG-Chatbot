@@ -10,51 +10,65 @@ import {
   setActiveConversation,
   startNewChat,
 } from "@/store/slices/chatSlice";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export default function CoPilotPage() {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { conversationId } = useParams();
   const user = useAppSelector((s) => s.auth.user);
   const chatState = useAppSelector((s) => s.chat);
   const { activeConversationId, conversations, isLoadingMessages } = chatState;
+  const selectedConversationId = conversationId ?? activeConversationId;
 
   const activeConversation = conversations.find(
-    (c) => c.id === activeConversationId,
+    (c) => c.id === selectedConversationId,
   );
-
-  // If we are loading messages, we are effectively "not empty" yet (or at least we shouldn't show DraftView)
-  // We treat it as empty ONLY if we are NOT loading and truly have no active conversation/messages
+  const hasSelectedConversation = Boolean(activeConversation);
+  const activeMessageCount = activeConversation?.messages.length ?? 0;
+  const isHydratingConversation =
+    Boolean(conversationId) &&
+    (isLoadingMessages ||
+      conversationId !== activeConversationId ||
+      !hasSelectedConversation);
   const isEmpty =
-    !activeConversationId ||
-    (!isLoadingMessages &&
-      (!activeConversation || activeConversation.messages.length === 0));
+    !isHydratingConversation &&
+    (!selectedConversationId || activeMessageCount === 0);
 
   // LOAD CONVERSATIONS ON MOUNT
   useEffect(() => {
     if (!user) return;
 
-    dispatch(fetchConversations())
-      .unwrap()
-      .then(() => {
-        if (conversationId) {
-          dispatch(setActiveConversation(conversationId));
-          dispatch(fetchMessages(conversationId));
-        }
-      });
+    void dispatch(fetchConversations());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, dispatch]);
 
   // SYNC URL TO REDUX
   useEffect(() => {
-    if (conversationId && conversationId !== activeConversationId) {
-      dispatch(setActiveConversation(conversationId));
-      dispatch(fetchMessages(conversationId));
-    } else if (!conversationId && activeConversationId) {
+    if (!user) return;
+
+    if (conversationId) {
+      if (conversationId !== activeConversationId) {
+        dispatch(setActiveConversation(conversationId));
+      }
+
+      if (
+        conversationId !== activeConversationId ||
+        !hasSelectedConversation ||
+        activeMessageCount === 0
+      ) {
+        void dispatch(fetchMessages(conversationId));
+      }
+    } else if (activeConversationId) {
       dispatch(startNewChat());
     }
-  }, [conversationId, activeConversationId, dispatch]);
+  }, [
+    user,
+    conversationId,
+    activeConversationId,
+    hasSelectedConversation,
+    activeMessageCount,
+    dispatch,
+  ]);
 
   return (
     <Box
@@ -94,7 +108,10 @@ export default function CoPilotPage() {
         }}
       >
         <Box style={{ flex: 1, minHeight: 0, display: "flex" }}>
-          <CopilotShell isEmpty={isEmpty} />
+          <CopilotShell
+            isEmpty={isEmpty}
+            isLoadingConversation={isHydratingConversation}
+          />
         </Box>
       </Box>
     </Box>

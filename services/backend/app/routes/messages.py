@@ -108,6 +108,7 @@ async def send_message(req: SendMessageRequest, request: Request, payload: dict 
         req.message, 
         conversation_history,
         req.conversationId,
+        db_pool=pool,
         user_role=user_role,
         reasoning_mode=req.reasoningMode,
     )
@@ -178,6 +179,7 @@ async def stream_message(req: SendMessageRequest, request: Request, payload: dic
             req.message, 
             conversation_history,
             req.conversationId,
+            db_pool=pool,
             user_role=user_role,
             reasoning_mode=req.reasoningMode,
         ):

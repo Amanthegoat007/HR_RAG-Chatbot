@@ -5,7 +5,13 @@ import ComposerShell from "./ComposerShell";
 import TranscriptViewport from "./TranscriptViewport";
 import classes from "./CopilotShell.module.css";
 
-export default function CopilotShell({ isEmpty }: { isEmpty: boolean }) {
+export default function CopilotShell({
+  isEmpty,
+  isLoadingConversation = false,
+}: {
+  isEmpty: boolean;
+  isLoadingConversation?: boolean;
+}) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -14,6 +20,7 @@ export default function CopilotShell({ isEmpty }: { isEmpty: boolean }) {
         <div className={classes.shellGrid}>
           <TranscriptViewport
             isEmpty={isEmpty}
+            isLoadingConversation={isLoadingConversation}
             scrollContainerRef={scrollContainerRef}
           />
           <ComposerShell isEmpty={isEmpty} />

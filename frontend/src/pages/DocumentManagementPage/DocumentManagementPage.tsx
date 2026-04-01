@@ -8,6 +8,7 @@ import {
   Loader,
   Modal,
   Paper,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
@@ -15,17 +16,32 @@ import {
 } from "@mantine/core";
 import { TbAlertCircle, TbDatabase, TbFileCheck, TbLoader2 } from "react-icons/tb";
 
-import { documentService, type DocumentInfo } from "@/services/documentService";
+import {
+  documentService,
+  type DocumentInfo,
+  type DocumentScope,
+  type DocumentStatus,
+} from "@/services/documentService";
 import { DocumentTable } from "./DocumentTable";
 import { UploadArea } from "./UploadArea";
 import classes from "./DocumentManagementPage.module.css";
 
-const IN_PROGRESS_STATUSES = ["pending", "processing"];
+const ACTIVE_PIPELINE_STATUSES: DocumentStatus[] = [
+  "pending",
+  "normalizing",
+  "processing",
+  "embedding",
+];
+
+const isActivePipelineStatus = (status: DocumentStatus) =>
+  ACTIVE_PIPELINE_STATUSES.includes(status);
 
 export default function DocumentManagementPage() {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [activeScope, setActiveScope] = useState<DocumentScope>("library");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [activeUploadCount, setActiveUploadCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<DocumentInfo | null>(
@@ -33,10 +49,13 @@ export default function DocumentManagementPage() {
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchDocuments = async (showLoading = true) => {
+  const fetchDocuments = async (
+    scope: DocumentScope,
+    showLoading = true,
+  ) => {
     try {
       if (showLoading) setLoading(true);
-      const data = await documentService.getDocuments("library");
+      const data = await documentService.getDocuments(scope);
       setDocuments(data);
       setError(null);
     } catch (err) {
@@ -48,35 +67,59 @@ export default function DocumentManagementPage() {
   };
 
   useEffect(() => {
-    void fetchDocuments();
+    void fetchDocuments(activeScope);
+  }, [activeScope]);
+
+  const hasInProgressDocuments = useMemo(
+    () =>
+      activeUploadCount > 0 ||
+      documents.some((doc) => isActivePipelineStatus(doc.status)),
+    [activeUploadCount, documents],
+  );
+
+  useEffect(() => {
+    if (!hasInProgressDocuments) {
+      return;
+    }
 
     const interval = window.setInterval(() => {
-      const needsRefresh = documents.some((doc) =>
-        IN_PROGRESS_STATUSES.includes(doc.status),
-      );
-      if (needsRefresh) {
-        void fetchDocuments(false);
-      }
+      void fetchDocuments(activeScope, false);
     }, 2500);
 
     return () => window.clearInterval(interval);
-  }, [documents]);
+  }, [activeScope, hasInProgressDocuments]);
 
   const handleDrop = async (files: File[]) => {
     if (files.length === 0) return;
 
     setUploading(true);
+    setActiveUploadCount((count) => count + files.length);
     setError(null);
 
+    let pendingClientUploads = files.length;
     try {
       for (const file of files) {
         await documentService.uploadDocument(file, { scope: "library" });
+        pendingClientUploads -= 1;
+        setActiveUploadCount((count) => Math.max(0, count - 1));
+        if (activeScope === "library") {
+          void fetchDocuments("library", false);
+        }
       }
-      await fetchDocuments(false);
+      if (activeScope !== "library") {
+        setActiveScope("library");
+      } else {
+        await fetchDocuments("library", false);
+      }
     } catch (err) {
       console.error("Upload failed", err);
       setError("Failed to upload document(s).");
     } finally {
+      if (pendingClientUploads > 0) {
+        setActiveUploadCount((count) =>
+          Math.max(0, count - pendingClientUploads),
+        );
+      }
       setUploading(false);
     }
   };
@@ -90,7 +133,7 @@ export default function DocumentManagementPage() {
       setDocuments((prev) => prev.filter((d) => d.id !== documentToDelete.id));
       setDeleteModalOpen(false);
       setDocumentToDelete(null);
-      await fetchDocuments(false);
+      await fetchDocuments(activeScope, false);
     } catch (err) {
       console.error("Delete failed", err);
       setError("Failed to delete document.");
@@ -101,12 +144,33 @@ export default function DocumentManagementPage() {
 
   const stats = useMemo(() => {
     const ready = documents.filter((doc) => doc.status === "ready").length;
-    const processing = documents.filter((doc) =>
-      IN_PROGRESS_STATUSES.includes(doc.status),
-    ).length;
+    const processing =
+      activeUploadCount +
+      documents.filter((doc) => isActivePipelineStatus(doc.status)).length;
     const failed = documents.filter((doc) => doc.status === "failed").length;
     return { total: documents.length, ready, processing, failed };
-  }, [documents]);
+  }, [activeUploadCount, documents]);
+
+  const scopeLabel = activeScope === "library" ? "library" : "session";
+  const totalLabel =
+    activeScope === "library" ? "Total library docs" : "Total session docs";
+  const readyHint =
+    activeScope === "library"
+      ? "Documents available to the assistant now."
+      : "Session uploads available to the assistant now.";
+  const processingHint =
+    activeScope === "library"
+      ? "Counts browser uploads plus jobs moving through normalization and indexing."
+      : "Counts uploaded session files plus jobs moving through normalization and indexing.";
+  const totalHint =
+    activeScope === "library"
+      ? "Includes ready, processing, and failed library documents."
+      : "Includes ready, processing, and failed session uploads.";
+  const showLibraryActivity = loading || hasInProgressDocuments;
+  const documentPanelCopy =
+    activeScope === "library"
+      ? "Review permanent library uploads, remove outdated material, and monitor processing health."
+      : "Review temporary conversation attachments that were uploaded from chat sessions.";
 
   return (
     <div className={classes.page}>
@@ -149,38 +213,39 @@ export default function DocumentManagementPage() {
             <Paper className={classes.statCard} radius="xl">
               <Text className={classes.statLabel}>Ready</Text>
               <Text className={classes.statValue}>{stats.ready}</Text>
-              <Text className={classes.statHint}>
-                Documents available to the assistant now.
-              </Text>
+              <Text className={classes.statHint}>{readyHint}</Text>
             </Paper>
             <Paper className={classes.statCard} radius="xl">
               <Text className={classes.statLabel}>Processing</Text>
-              <Group justify="space-between" align="center">
+              <div className={classes.metricRow}>
                 <Text className={classes.statValue}>{stats.processing}</Text>
                 {stats.processing > 0 ? (
-                  <Loader size="sm" color="var(--app-accent-primary)" />
+                  <Loader
+                    size="sm"
+                    color="var(--app-accent-primary)"
+                    className={classes.metricStatus}
+                  />
                 ) : (
-                  <TbLoader2 className={classes.statIconMuted} size={18} />
+                  <TbLoader2
+                    className={`${classes.statIconMuted} ${classes.metricStatus}`}
+                    size={18}
+                  />
                 )}
-              </Group>
-              <Text className={classes.statHint}>
-                Intake jobs moving through normalization and indexing.
-              </Text>
+              </div>
+              <Text className={classes.statHint}>{processingHint}</Text>
             </Paper>
             <Paper className={classes.statCard} radius="xl">
-              <Text className={classes.statLabel}>Total library docs</Text>
+              <Text className={classes.statLabel}>{totalLabel}</Text>
               <Text className={classes.statValue}>{stats.total}</Text>
-              <Text className={classes.statHint}>
-                Includes ready, processing, and failed documents.
-              </Text>
+              <Text className={classes.statHint}>{totalHint}</Text>
             </Paper>
           </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, lg: 3 }} spacing="lg">
             <Paper className={classes.uploadPanel} radius="xl">
               <Stack gap="md">
-                <Group justify="space-between" align="flex-start">
-                  <div>
+                <div className={classes.sectionHeader}>
+                  <div className={classes.sectionHeaderCopy}>
                     <Title order={3} className={classes.sectionTitle}>
                       Upload documents
                     </Title>
@@ -190,39 +255,67 @@ export default function DocumentManagementPage() {
                     </Text>
                   </div>
                   {uploading ? (
-                    <Loader size="sm" color="var(--app-accent-primary)" />
+                    <Loader
+                      size="sm"
+                      color="var(--app-accent-primary)"
+                      className={classes.sectionHeaderStatus}
+                    />
                   ) : (
-                    <TbFileCheck size={18} className={classes.sectionIcon} />
+                    <TbFileCheck
+                      size={18}
+                      className={`${classes.sectionIcon} ${classes.sectionHeaderStatus}`}
+                    />
                   )}
-                </Group>
+                </div>
                 <UploadArea onDrop={handleDrop} loading={uploading} />
               </Stack>
             </Paper>
 
             <Paper className={classes.libraryPanel} radius="xl">
-              <Stack gap="md">
-                <Group justify="space-between" align="center">
-                  <div>
+              <Stack gap="md" className={classes.libraryPanelBody}>
+                <div className={classes.sectionHeader}>
+                  <div className={classes.sectionHeaderCopy}>
                     <Title order={3} className={classes.sectionTitle}>
-                      Library documents
+                      {activeScope === "library"
+                        ? "Library documents"
+                        : "Session uploads"}
                     </Title>
                     <Text className={classes.sectionCopy}>
-                      Review status, remove outdated material, and monitor
-                      processing health.
+                      {documentPanelCopy}
                     </Text>
                   </div>
-                  {loading ? (
-                    <Loader size="sm" color="var(--app-accent-primary)" />
+                  {showLibraryActivity ? (
+                    <TbLoader2
+                      size={18}
+                      className={`${classes.sectionIcon} ${classes.sectionHeaderStatus} ${classes.spinningStatus}`}
+                      aria-label={`Refreshing ${scopeLabel} documents`}
+                    />
                   ) : null}
-                </Group>
+                </div>
 
-                <DocumentTable
-                  documents={documents}
-                  onDeleteClick={(doc) => {
-                    setDocumentToDelete(doc);
-                    setDeleteModalOpen(true);
+                <SegmentedControl
+                  value={activeScope}
+                  onChange={(value) => setActiveScope(value as DocumentScope)}
+                  data={[
+                    { label: "Permanent uploads", value: "library" },
+                    { label: "Session uploads", value: "session" },
+                  ]}
+                  classNames={{
+                    root: classes.scopeControl,
+                    indicator: classes.scopeControlIndicator,
+                    label: classes.scopeControlLabel,
                   }}
                 />
+                <div className={classes.libraryListViewport}>
+                  <DocumentTable
+                    documents={documents}
+                    scope={activeScope}
+                    onDeleteClick={(doc) => {
+                      setDocumentToDelete(doc);
+                      setDeleteModalOpen(true);
+                    }}
+                  />
+                </div>
               </Stack>
             </Paper>
           </SimpleGrid>

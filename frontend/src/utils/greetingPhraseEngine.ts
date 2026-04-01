@@ -6,8 +6,14 @@ export interface GreetingCopy {
 }
 
 type TimeBucket = "morning" | "afternoon" | "evening";
+type ExtendedTimeBucket = "night" | TimeBucket;
 
-const PROMPTS: Record<TimeBucket, string[]> = {
+const PROMPTS: Record<ExtendedTimeBucket, string[]> = {
+  night: [
+    "What still needs a clear answer tonight?",
+    "Need a quick policy read before you sign off?",
+    "What should we settle before the day closes?",
+  ],
   morning: [
     "What should we sort out first?",
     "Ready to start the day with policy clarity?",
@@ -25,17 +31,20 @@ const PROMPTS: Record<TimeBucket, string[]> = {
   ],
 };
 
-const SALUTATIONS: Record<TimeBucket, string> = {
+const SALUTATIONS: Record<ExtendedTimeBucket, string> = {
+  night: "Good night",
   morning: "Good morning",
   afternoon: "Good afternoon",
   evening: "Good evening",
 };
 
-function getTimeBucket(date: Date): TimeBucket {
+export function getTimeBucket(date: Date): ExtendedTimeBucket {
   const hour = date.getHours();
+  if (hour < 5) return "night";
   if (hour < 12) return "morning";
   if (hour < 18) return "afternoon";
-  return "evening";
+  if (hour < 22) return "evening";
+  return "night";
 }
 
 function getSeed(date: Date, displayName: string, roleLabel: string): number {

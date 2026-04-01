@@ -318,6 +318,47 @@
   border-top: 1px solid var(--app-border);
 }
 
+.trustRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.trustLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-text-tertiary);
+}
+
+.trustTokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trustToken {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: var(--app-text-secondary);
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.trustToken[data-tone="warning"] {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
 .sourcesLabel {
   display: flex;
   align-items: center;
@@ -363,6 +404,52 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 280px;
+}
+
+.suggestionRail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.suggestionRailLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-text-tertiary);
+}
+
+.suggestionTokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestionToken {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--app-source-card-border);
+  border-radius: 999px;
+  background: var(--app-source-card-bg);
+  color: var(--app-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font: inherit;
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.suggestionToken:hover {
+  background: var(--app-source-card-bg-hover);
+  border-color: var(--app-source-card-border-active);
+  color: var(--app-text-primary);
+  transform: translateY(-1px);
 }
 
 /* ── Pipeline Stage Indicator ──────────────────────────────── */

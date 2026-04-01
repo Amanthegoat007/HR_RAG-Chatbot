@@ -20,12 +20,45 @@ import logging
 from pathlib import Path
 
 from app.config import settings
+from shared.document_core.quality import score_markdown_quality
 
 logger = logging.getLogger(__name__)
 
 # Minimum characters per page to consider a PDF as "digitally extractable"
 # If average is below this, we assume scanned pages and fall back to OCR
 MIN_CHARS_PER_PAGE_THRESHOLD = 50
+OCR_IMAGE_MIN_WIDTH = 1600
+OCR_IMAGE_CONFIGS = (
+    ("block", "--oem 3 --psm 6"),
+    ("sparse", "--oem 3 --psm 11 preserve_interword_spaces=1"),
+)
+
+
+def _ocr_language_candidates() -> list[str]:
+    primary = (settings.tesseract_lang or "eng").strip()
+    candidates = [primary]
+    primary_parts = [part.strip() for part in primary.split("+") if part.strip()]
+    if "eng" in primary_parts and primary != "eng":
+        candidates.append("eng")
+    return list(dict.fromkeys(candidates))
+
+
+def _select_best_ocr_candidate(
+    candidates: list[tuple[str, str]],
+) -> tuple[str, str, float]:
+    if not candidates:
+        raise ValueError("No OCR candidates provided")
+
+    scored: list[tuple[float, int, str, str]] = []
+    for label, markdown in candidates:
+        quality = score_markdown_quality(markdown, 1, ocr_used=True)
+        scored.append((quality.score, len(markdown), label, markdown))
+
+    best_score, _, best_label, best_markdown = max(
+        scored,
+        key=lambda item: (item[0], item[1]),
+    )
+    return best_label, best_markdown, best_score
 
 
 def convert_to_markdown(file_bytes: bytes, filename: str) -> tuple[str, int]:
@@ -205,19 +238,78 @@ def _ocr_image(file_bytes: bytes, filename: str) -> tuple[str, int]:
         import io
 
         import pytesseract
-        from PIL import Image
+        from PIL import Image, ImageFilter, ImageOps
     except ImportError as e:
         raise ImportError(f"OCR dependencies missing: {e}")
 
     from app.markdown_converter import _build_frontmatter
 
-    img = Image.open(io.BytesIO(file_bytes))
-    text = pytesseract.image_to_string(
-        img,
-        lang=settings.tesseract_lang,
-        config="--psm 6",
-    ).strip()
+    def _prepare_image_for_ocr(image: Image.Image) -> Image.Image:
+        if image.mode in {"RGBA", "LA"} or (
+            image.mode == "P" and image.info.get("transparency") is not None
+        ):
+            flattened = Image.new("RGBA", image.size, "white")
+            flattened.alpha_composite(image.convert("RGBA"))
+            image = flattened.convert("RGB")
+        else:
+            image = image.convert("RGB")
 
-    markdown = _build_frontmatter(filename, Path(filename).suffix.lower().lstrip("."), 1)
-    markdown_body = text or "*(No text extracted from image)*"
-    return f"{markdown}\n\n{markdown_body}", 1
+        prepared = ImageOps.autocontrast(image.convert("L"))
+        if prepared.width < OCR_IMAGE_MIN_WIDTH:
+            scale = OCR_IMAGE_MIN_WIDTH / max(prepared.width, 1)
+            prepared = prepared.resize(
+                (
+                    max(1, int(prepared.width * scale)),
+                    max(1, int(prepared.height * scale)),
+                ),
+                Image.Resampling.LANCZOS,
+            )
+        return prepared.filter(ImageFilter.SHARPEN)
+
+    img = Image.open(io.BytesIO(file_bytes))
+    prepared = _prepare_image_for_ocr(img)
+    frontmatter = _build_frontmatter(
+        filename,
+        Path(filename).suffix.lower().lstrip("."),
+        1,
+    )
+
+    markdown_candidates: list[tuple[str, str]] = []
+    errors: list[str] = []
+
+    for language in _ocr_language_candidates():
+        for config_name, config_value in OCR_IMAGE_CONFIGS:
+            try:
+                text = pytesseract.image_to_string(
+                    prepared,
+                    lang=language,
+                    config=config_value,
+                ).strip()
+                markdown_body = text or "*(No text extracted from image)*"
+                markdown_candidates.append(
+                    (
+                        f"{language}:{config_name}",
+                        f"{frontmatter}\n\n{markdown_body}",
+                    ),
+                )
+            except Exception as exc:
+                errors.append(f"{language}:{config_name}:{exc}")
+
+    if not markdown_candidates:
+        raise RuntimeError(
+            f"Image OCR failed for {filename}: {'; '.join(errors) if errors else 'unknown error'}",
+        )
+
+    selected_label, selected_markdown, selected_score = _select_best_ocr_candidate(
+        markdown_candidates,
+    )
+    logger.info(
+        "Selected OCR image candidate",
+        extra={
+            "doc_filename": filename,
+            "candidate": selected_label,
+            "quality_score": round(selected_score, 3),
+            "attempts": len(markdown_candidates),
+        },
+    )
+    return selected_markdown, 1

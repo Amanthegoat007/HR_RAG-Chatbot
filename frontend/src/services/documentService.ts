@@ -2,12 +2,20 @@ import { axiosClient } from "./axiosClient";
 import axios from "axios";
 
 export type DocumentScope = "library" | "session";
+export type DocumentStatus =
+  | "pending"
+  | "normalizing"
+  | "processing"
+  | "embedding"
+  | "ready"
+  | "failed"
+  | "needs_review";
 
 export interface DocumentUploadJob {
   document_id: string;
   filename: string;
   file_size_bytes: number;
-  status: "pending" | "processing" | "ready" | "failed";
+  status: DocumentStatus;
   job_id: string;
   message: string;
   scope: DocumentScope;
@@ -19,7 +27,7 @@ export interface DocumentInfo {
   filename: string;
   original_format: string;
   file_size_bytes: number;
-  status: "pending" | "processing" | "ready" | "failed";
+  status: DocumentStatus;
   error_message: string | null;
   uploaded_at: string;
   uploaded_by: string;

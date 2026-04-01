@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 os.environ.setdefault("JWT_SECRET", "test_secret_at_least_256bits_long_for_testing")
 os.environ.setdefault("POSTGRES_DSN", "postgresql://test:test@localhost/test")
@@ -93,3 +94,106 @@ def test_build_assistant_message_metadata_includes_context_resolution():
 
     assert metadata["contextResolution"]["resolutionMode"] == "resolved_follow_up"
     assert metadata["contextResolution"]["source"] == "llm"
+
+
+def test_build_trust_summary_uses_document_metadata_and_detects_conflicts():
+    from app.services.assistant_enrichment import build_trust_summary
+
+    now = datetime.now(timezone.utc)
+    sources = [
+        {
+            "filename": "Leave_Policy_v4.pdf",
+            "section": "Annual Leave",
+            "page_number": 3,
+            "document_id": "doc-1",
+            "score": 0.91,
+        },
+        {
+            "filename": "Leave_Policy_v5.pdf",
+            "section": "Annual Leave",
+            "page_number": 4,
+            "document_id": "doc-2",
+            "score": 0.82,
+        },
+    ]
+    document_records = {
+        "doc-1": {
+            "filename": "Leave_Policy_v4.pdf",
+            "uploaded_at": now - timedelta(days=12),
+            "processed_at": now - timedelta(days=10),
+            "metadata": {
+                "policy_title": "Leave Policy",
+                "policy_family": "Leave Policy",
+                "policy_version": "v4.0",
+                "effective_date": "2026-01-01",
+                "owner": "HR Operations",
+            },
+        },
+        "doc-2": {
+            "filename": "Leave_Policy_v5.pdf",
+            "uploaded_at": now - timedelta(days=9),
+            "processed_at": now - timedelta(days=8),
+            "metadata": {
+                "policy_title": "Leave Policy",
+                "policy_family": "Leave Policy",
+                "policy_version": "v5.0",
+                "effective_date": "2026-02-01",
+                "owner": "HR Operations",
+            },
+        },
+    }
+
+    summary = build_trust_summary(sources, document_records=document_records)
+
+    assert summary["policyTitle"] == "Leave Policy"
+    assert summary["policyVersion"] == "v4.0"
+    assert summary["effectiveDateLabel"] == "Jan 01, 2026"
+    assert summary["owner"] == "HR Operations"
+    assert summary["groundingLabel"] == "High grounding"
+    assert summary["hasConflict"] is True
+    assert "conflict" in summary["conflictLabel"].lower() or "mismatch" in summary["conflictLabel"].lower()
+
+
+def test_build_related_suggestions_are_grounded_sparse_and_role_aware():
+    from app.services.assistant_enrichment import build_related_suggestions
+
+    metadata = {
+        "answerPath": "llm",
+        "contextResolution": {
+            "activeSubject": "Public Holiday Policy",
+        },
+    }
+    sources = [
+        {
+            "filename": "Public_Holiday_Policy.pdf",
+            "section": "Public Holidays",
+            "page_number": 2,
+            "document_id": "doc-1",
+            "score": 0.88,
+        }
+    ]
+    trust_summary = {
+        "policyTitle": "Public Holiday Policy",
+        "policyFamily": "Public Holiday Policy",
+    }
+
+    manager_suggestions = build_related_suggestions(
+        question="What are the holidays this year?",
+        user_role="manager",
+        metadata=metadata,
+        sources=sources,
+        trust_summary=trust_summary,
+    )
+
+    assert len(manager_suggestions) == 3
+    assert manager_suggestions[0]["label"] == "Holiday overlap"
+    assert any("manager" in suggestion["prompt"].lower() for suggestion in manager_suggestions)
+
+    no_context_suggestions = build_related_suggestions(
+        question="What are the holidays this year?",
+        user_role="employee",
+        metadata={"answerPath": "no_context"},
+        sources=sources,
+        trust_summary=trust_summary,
+    )
+    assert no_context_suggestions == []
