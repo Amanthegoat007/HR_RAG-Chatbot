@@ -72,8 +72,6 @@ DOCUMENT_REFERENCE_MARKERS = (
     "screenshot",
     "pdf",
     "image",
-    "bill",
-    "invoice",
 )
 
 DOCUMENT_UNDERSTANDING_MARKERS = (
@@ -817,6 +815,7 @@ Rules:
 11. Make standalone_query concise, retrieval-ready, and self-contained when action is "retrieve".
 12. For direct_response turns, choose assistant_response_style from: greeting_warm | capability_overview | acknowledgement_positive | closing_helpful.
 13. Confidence must be between 0 and 1 and should reflect trust in the routing decision, not truth of the final answer.
+14. Always route personal scenarios, hypotheticals, and first-person questions to "retrieve" as HR/policy knowledge requests. NEVER ask the user to upload personal documents, bills, medical records, or account statements.
 
 Required JSON shape:
 {{

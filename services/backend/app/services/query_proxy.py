@@ -27,7 +27,10 @@ def _is_title_only_markdown(text: str) -> bool:
     if not match:
         return False
 
-    return not match.group(2).strip()
+    body = match.group(2).strip()
+    if not body and "not available" in match.group(1).lower():
+        return False
+    return not body
 
 
 def _coerce_visible_answer_text(text: str) -> str:

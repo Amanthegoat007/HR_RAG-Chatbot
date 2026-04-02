@@ -135,6 +135,8 @@ def _is_title_only_answer(text: str) -> bool:
         return False
 
     body = match.group(2).strip()
+    if not body and "not available" in match.group(1).lower():
+        return False
     return not body
 
 
@@ -516,6 +518,9 @@ async def run_query_pipeline(
     conversation_working_set: dict[str, Any] | None = None,
     reasoning_mode: Optional[Literal["fast", "deep"]] = None,
 ) -> AsyncGenerator[Any, None]:
+    if hasattr(conversation_working_set, "model_dump"):
+        conversation_working_set = conversation_working_set.model_dump()
+    
     """
     Execute the full RAG pipeline and yield SSE events.
 
